@@ -344,30 +344,20 @@
 
   <!-- ================= MODAL: VINCULAR NUEVO TELEVISOR ================= -->
   <div class="modal-backdrop" id="pairing-modal">
-    <div class="modal-window">
+    <div class="modal-window" style="max-width: 480px;">
       <div class="modal-header">
-        <h3 class="modal-title">Vincular Nueva Pantalla Android TV</h3>
-        <button class="modal-close-btn" id="btn-close-modal">&times;</button>
+        <h3 class="modal-title">Vincular Pantalla Android TV</h3>
+        <button type="button" class="modal-close-btn" id="btn-close-modal" title="Cerrar">&times;</button>
       </div>
 
       <form id="form-pair-device">
-        <div class="modal-body">
-          <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 12px;">
-            Abre la app <strong>0Media Signage</strong> en tu televisor. Ingresa los <strong>6 caracteres</strong> que muestra en pantalla o escanea el QR con tu móvil:
-          </p>
-
-          <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 14px; display: flex; align-items: center; gap: 12px;">
-            <div style="font-size: 2rem; background: rgba(56, 189, 248, 0.1); border-radius: 8px; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-              📱
-            </div>
-            <div style="font-size: 0.82rem; color: #94a3b8; line-height: 1.4;">
-              <strong style="color: #38bdf8; display: block;">Escaneo de Código QR o PIN:</strong>
-              Al abrir este panel desde tu móvil tras escanear el QR, o al escribir el PIN aquí, la TV comenzará la reproducción de inmediato.
-            </div>
+        <div class="modal-body" style="padding: 14px 18px; gap: 10px;">
+          <div style="font-size: 0.82rem; color: var(--text-muted); text-align: center;">
+            Ingresa el <strong>código de 6 caracteres</strong> que muestra la app en tu televisor:
           </div>
 
-          <!-- 6-DIGIT PIN INPUTS -->
-          <div class="pin-input-container">
+          <!-- 6-DIGIT PIN INPUTS (COMPACTO) -->
+          <div class="pin-input-container" style="margin: 2px 0 6px;">
             <input type="text" maxlength="1" class="pin-digit" id="pin-0" autofocus>
             <input type="text" maxlength="1" class="pin-digit" id="pin-1">
             <input type="text" maxlength="1" class="pin-digit" id="pin-2">
@@ -376,35 +366,32 @@
             <input type="text" maxlength="1" class="pin-digit" id="pin-5">
           </div>
 
-          <div class="form-group" style="margin-top: 16px;">
-            <label class="form-label" for="input-device-name">Nombre del Televisor / Dispositivo:</label>
-            <input type="text" id="input-device-name" class="form-input" placeholder="Ej. TV Entrada Principal - Pasillo Central" required value="Mi Pantalla TV">
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="input-device-location">Ubicación / Sucursal:</label>
-            <input type="text" id="input-device-location" class="form-input" placeholder="Ej. Sede Central, Planta Baja" required value="Sala Principal">
-          </div>
-
-          <!-- DATOS COMERCIALES DOOH DE LA PANTALLA -->
-          <div class="form-group-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <!-- DATOS DE LA PANTALLA EN 2 COLUMNAS -->
+          <div class="form-group-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
             <div class="form-group">
-              <label class="form-label" for="input-device-tariff">💵 Tarifa Comercial por Publicidad:</label>
-              <input type="text" id="input-device-tariff" class="form-input" placeholder="Ej. $50.00 / mes o $15 / semana" value="$50.00 / mes">
+              <label class="form-label" for="input-device-name">📺 Nombre:</label>
+              <input type="text" id="input-device-name" class="form-input" placeholder="Ej. TV Pasillo PB" required value="Mi Pantalla TV">
             </div>
             <div class="form-group">
-              <label class="form-label" for="input-device-max-slots">📊 Cupo Máx. Anuncios:</label>
+              <label class="form-label" for="input-device-location">📍 Ubicación:</label>
+              <input type="text" id="input-device-location" class="form-input" placeholder="Ej. Planta Baja" required value="Sala Principal">
+            </div>
+          </div>
+
+          <!-- DATOS COMERCIALES DOOH EN 2 COLUMNAS -->
+          <div class="form-group-grid" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 10px;">
+            <div class="form-group">
+              <label class="form-label" for="input-device-tariff">💵 Tarifa Comercial:</label>
+              <input type="text" id="input-device-tariff" class="form-input" placeholder="Ej. $50.00 / mes" value="$50.00 / mes">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="input-device-max-slots">📊 Cupo Máximo:</label>
               <input type="number" id="input-device-max-slots" class="form-input" min="1" max="50" value="10">
             </div>
           </div>
-
-          <div style="padding: 10px 14px; background: rgba(37, 99, 235, 0.1); border: 1px solid rgba(37, 99, 235, 0.3); border-radius: 8px; font-size: 0.82rem; color: #93C5FD; display: flex; align-items: center; gap: 8px; margin-top: 6px;">
-            <span>✨</span>
-            <span>La nueva pantalla se vinculará <strong>completamente limpia (0 anuncios)</strong>. Podrás subir fotos y videos exclusivos inmediatamente tras autorizarla.</span>
-          </div>
         </div>
 
-        <div class="modal-footer">
+        <div class="modal-footer" style="padding: 10px 18px;">
           <button type="button" class="btn btn-secondary" id="btn-cancel-modal">Cancelar</button>
           <button type="submit" class="btn btn-primary" id="btn-confirm-pairing">
             <span>🔗</span> Autorizar y Vincular Dispositivo
@@ -579,10 +566,11 @@
   <!-- ================= MODAL: INICIO DE SESIÓN ADMINISTRADOR / ANUNCIANTE ================= -->
   <div class="modal-backdrop" id="login-modal" style="z-index: 99999;">
     <div class="modal-window" style="max-width: 420px; border-color: rgba(37, 99, 235, 0.4); box-shadow: 0 20px 40px rgba(0,0,0,0.8), 0 0 25px rgba(37,99,235,0.25);">
-      <div class="modal-header" style="text-align: center; justify-content: center; position: relative;">
+      <div class="modal-header" style="display: flex; align-items: center; justify-content: space-between; position: relative;">
         <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
           <span>🔐</span> 0Media — Iniciar Sesión
         </h3>
+        <button type="button" class="modal-close-btn" id="btn-close-login-modal" title="Cerrar">&times;</button>
       </div>
       <form id="form-admin-login">
         <div class="modal-body" style="gap: 16px;">

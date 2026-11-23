@@ -1569,6 +1569,28 @@ document.addEventListener('DOMContentLoaded', () => {
   // Modal de Previsualización
   if (btnClosePreviewModal) btnClosePreviewModal.addEventListener('click', closePreviewModal);
 
+  // Modal de Login (Cierre con X)
+  const btnCloseLoginModal = document.getElementById('btn-close-login-modal');
+  if (btnCloseLoginModal) btnCloseLoginModal.addEventListener('click', closeLoginModal);
+
+  // Cerrar cualquier modal haciendo clic en el fondo oscuro (backdrop)
+  document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+    backdrop.addEventListener('click', (e) => {
+      if (e.target === backdrop) {
+        backdrop.classList.remove('open');
+      }
+    });
+  });
+
+  // Cerrar cualquier modal abierto al presionar la tecla Escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal-backdrop.open').forEach(modal => {
+        modal.classList.remove('open');
+      });
+    }
+  });
+
   // Modal de Vinculación
   if (btnOpenModal) btnOpenModal.addEventListener('click', openPairingModal);
   if (btnCloseModal) btnCloseModal.addEventListener('click', closePairingModal);
