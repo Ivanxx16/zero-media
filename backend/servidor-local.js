@@ -1733,6 +1733,15 @@ const server = http.createServer((req, res) => {
       }
       if (!Array.isArray(targetDevice.items)) targetDevice.items = [];
 
+      // Sincronizar automáticamente cualquier publicidad general activa al nuevo televisor vinculado
+      const activeGlobalAds = (state.customItems || []).filter(x => (x.isGlobal || x.ownerId === 'admin') && x.isEnabled !== false);
+      activeGlobalAds.forEach(gAd => {
+        if (!targetDevice.items.some(x => x.id === gAd.id)) {
+          targetDevice.items.unshift({ ...gAd });
+        }
+      });
+      targetDevice.items.forEach((it, idx) => { it.orderIndex = idx + 1; });
+
       state.manifestVersion = "v" + Date.now();
       saveState();
 
@@ -1979,7 +1988,8 @@ const server = http.createServer((req, res) => {
         const sizeKb = Math.round(fileSize / 1024);
         const sizeText = sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`;
 
-        const isGlobalBroadcast = !effectiveTargetTvId || effectiveTargetTvId === 'ALL' || effectiveTargetTvId === 'all';
+        const isGlobalBroadcast = !effectiveTargetTvId || effectiveTargetTvId === 'ALL' || effectiveTargetTvId === 'all' || Boolean(data.isGlobal);
+        const isPriority = isGlobalBroadcast || Boolean(data.isPriority);
         const targetDevice = isGlobalBroadcast ? null : state.devices.find(d => d.id === effectiveTargetTvId);
 
         if (targetDevice && targetDevice.maxSlots) {
@@ -2019,6 +2029,8 @@ const server = http.createServer((req, res) => {
           validTo: validTo || null,
           approvalStatus: approvalStatus,
           tariffAmount: targetDevice?.tariff ? parseFloat(targetDevice.tariff) : 0,
+          isGlobal: isGlobalBroadcast,
+          isPriority: isPriority,
           createdAt: Date.now()
         };
 
@@ -2026,25 +2038,35 @@ const server = http.createServer((req, res) => {
           if (!Array.isArray(targetDevice.items)) targetDevice.items = [];
           if (replacePrevious === true && !isClient) {
             targetDevice.items = [newItem];
+          } else if (isPriority) {
+            targetDevice.items.unshift(newItem); // Prioridad: se ubica al frente
           } else {
             targetDevice.items.push(newItem);
           }
           targetDevice.items.forEach((it, idx) => { it.orderIndex = idx + 1; });
           console.log(`[UPLOAD] Publicidad asignada a pantalla "${targetDevice.name}" por ${finalClientName} (Estado: ${approvalStatus}).`);
         } else {
-          // Sincronización global
+          // Sincronización global con prioridad en todos los dispositivos vinculados
           const activeDevs = state.devices.filter(d => d.isPaired);
           activeDevs.forEach(d => {
             if (!Array.isArray(d.items)) d.items = [];
-            d.items.push({ ...newItem });
+            if (isPriority) {
+              d.items.unshift({ ...newItem }); // Se ubica primero en cada carrusel
+            } else {
+              d.items.push({ ...newItem });
+            }
             d.items.forEach((it, idx) => { it.orderIndex = idx + 1; });
           });
-          console.log(`[UPLOAD GLOBAL] Publicidad sincronizada a ${activeDevs.length} pantallas por ${finalClientName} (Estado: ${approvalStatus}).`);
+          console.log(`[UPLOAD GLOBAL] Publicidad General prioritaria sincronizada a ${activeDevs.length} pantallas por ${finalClientName} (Estado: ${approvalStatus}).`);
         }
 
         // Catálogo global
         if (!Array.isArray(state.customItems)) state.customItems = [];
-        state.customItems.push(newItem);
+        if (isPriority) {
+          state.customItems.unshift(newItem);
+        } else {
+          state.customItems.push(newItem);
+        }
         state.customItems.forEach((it, idx) => { it.orderIndex = idx + 1; });
 
         state.manifestVersion = "v" + Date.now();
@@ -2113,7 +2135,8 @@ const server = http.createServer((req, res) => {
 
       if (itemInCatalog) itemInCatalog.isEnabled = isEnabled;
 
-      if (targetTvId) {
+      const isGlobalToggle = !targetTvId || targetTvId === 'ALL' || targetTvId === 'all';
+      if (!isGlobalToggle) {
         const dev = state.devices.find(d => d.id === targetTvId);
         if (dev && Array.isArray(dev.items)) {
           const it = dev.items.find(x => x.id === itemId);
@@ -2301,6 +2324,55 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // 13.05 PUBLICIDAD GENERAL / GLOBAL (EXCLUSIVO ADMIN)
+  if (req.method === 'GET' && url === '/api/v1/admin/global-ads') {
+    if (!checkAdminAuth(req)) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: "No autorizado. Solo administrador." }));
+      return;
+    }
+
+    const pairedCount = (state.devices || []).filter(d => d.isPaired).length;
+    const globalAds = [];
+    const seenIds = new Set();
+
+    (state.customItems || []).forEach(it => {
+      if ((it.isGlobal || it.ownerId === 'admin') && !seenIds.has(it.id)) {
+        seenIds.add(it.id);
+        const devCount = (state.devices || []).filter(d => d.isPaired && (d.items || []).some(x => x.id === it.id)).length;
+        globalAds.push({
+          ...it,
+          activeDevicesCount: devCount || pairedCount,
+          totalPairedDevices: pairedCount
+        });
+      }
+    });
+
+    (state.devices || []).forEach(d => {
+      if (Array.isArray(d.items)) {
+        d.items.forEach(it => {
+          if ((it.isGlobal || it.ownerId === 'admin') && !seenIds.has(it.id)) {
+            seenIds.add(it.id);
+            const devCount = (state.devices || []).filter(dev => dev.isPaired && (dev.items || []).some(x => x.id === it.id)).length;
+            globalAds.push({
+              ...it,
+              activeDevicesCount: devCount || pairedCount,
+              totalPairedDevices: pairedCount
+            });
+          }
+        });
+      }
+    });
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      success: true,
+      globalAds: globalAds,
+      totalPairedDevices: pairedCount
+    }));
+    return;
+  }
+
   // 13.1 MODERACIÓN DE ANUNCIOS: APROBAR
   if (req.method === 'POST' && url === '/api/v1/devices/approve-ad') {
     if (!checkAdminAuth(req)) {
@@ -2413,7 +2485,8 @@ const server = http.createServer((req, res) => {
         }
       }
 
-      if (targetTvId) {
+      const isGlobalDelete = !targetTvId || targetTvId === 'ALL' || targetTvId === 'all';
+      if (!isGlobalDelete) {
         const dev = state.devices.find(d => d.id === targetTvId);
         if (dev && Array.isArray(dev.items)) {
           dev.items = dev.items.filter(it => it.id !== itemId);

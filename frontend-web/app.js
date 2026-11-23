@@ -336,6 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
           inputClientName.readOnly = false;
         }
         loadAndRenderApprovals();
+        loadAndRenderGlobalAds();
       } else {
         // Rol DEVICE_USER o CLIENT: Usuario que quiere poner publicidad en un televisor
         if (roleIcon) roleIcon.textContent = '📺';
@@ -437,6 +438,7 @@ document.addEventListener('DOMContentLoaded', () => {
     devices: "Pantallas en Vivo — Monitoreo en Tiempo Real",
     approvals: "Bandeja de Aprobación de Publicidades",
     playlists: "Lista de Campañas — Publicidad por Televisor",
+    'global-ads': "Publicidad General — Emisión Prioritaria en Toda la Red",
     'user-portal': "Panel de Anunciante — Mi Pantalla y Publicidad"
   };
 
@@ -446,7 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Si es usuario normal de TV o cliente, no permitir ingresar a vistas de admin
-    if (currentUser && currentUser.role !== 'ADMIN' && (targetView === 'devices' || targetView === 'approvals' || targetView === 'playlists')) {
+    if (currentUser && currentUser.role !== 'ADMIN' && (targetView === 'devices' || targetView === 'approvals' || targetView === 'playlists' || targetView === 'global-ads')) {
       targetView = 'user-portal';
     }
 
@@ -479,6 +481,8 @@ document.addEventListener('DOMContentLoaded', () => {
       renderTvSelector();
     } else if (targetView === 'approvals') {
       loadAndRenderApprovals();
+    } else if (targetView === 'global-ads') {
+      loadAndRenderGlobalAds();
     } else if (targetView === 'user-portal') {
       renderUserPortal();
     }
@@ -496,6 +500,8 @@ document.addEventListener('DOMContentLoaded', () => {
       switchView('approvals');
     } else if (hash === 'playlists') {
       switchView('playlists');
+    } else if (hash === 'global-ads') {
+      switchView('global-ads');
     } else if (hash === 'user-portal') {
       switchView('user-portal');
     } else if (hash === 'devices') {
@@ -1776,6 +1782,7 @@ document.addEventListener('DOMContentLoaded', () => {
           } else {
             showToast(`🎉 ¡"${title}" publicado y transmitiendo en la pantalla!`, '#10B981');
             loadAndRenderApprovals();
+        loadAndRenderGlobalAds();
           }
         } else {
           throw new Error(resData.error || "Error al procesar la subida");
@@ -2532,6 +2539,7 @@ document.addEventListener('DOMContentLoaded', () => {
               showToast(`🎉 ¡"${title}" APROBADO! Ya está proyectándose en vivo en el televisor.`, '#10B981');
               await loadDevicesFromBackend();
               loadAndRenderApprovals();
+        loadAndRenderGlobalAds();
             } else {
               showToast(`⚠️ ${resData.error || 'Error al aprobar'}`, '#EF4444');
             }
@@ -2559,6 +2567,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast(`❌ Anuncio "${title}" rechazado.`, '#EF4444');
                 await loadDevicesFromBackend();
                 loadAndRenderApprovals();
+        loadAndRenderGlobalAds();
               } else {
                 showToast(`⚠️ ${resData.error || 'Error al rechazar'}`, '#EF4444');
               }
@@ -3033,6 +3042,396 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (err) {
         showToast('⚠️ Error al conectar con el servidor.', '#EF4444');
       }
+    });
+  }
+
+  // ================= 11.5 PUBLICIDAD GENERAL DE ADMINISTRACIÓN =================
+  const badgeGlobalAdsCount = document.getElementById('badge-global-ads-count');
+  const globalAdsContainer = document.getElementById('global-ads-container');
+  const globalAdsScreenCount = document.getElementById('global-ads-screen-count');
+  const globalAdsTotalCount = document.getElementById('global-ads-total-count');
+  const btnRefreshGlobalAds = document.getElementById('btn-refresh-global-ads');
+  const formUploadGlobalAd = document.getElementById('form-upload-global-ad');
+  const globalMediaFileInput = document.getElementById('global-media-file-input');
+  const globalDropZoneUpload = document.getElementById('global-drop-zone-upload');
+  const globalUploadPrompt = document.getElementById('global-upload-prompt');
+  const globalUploadPreview = document.getElementById('global-upload-preview');
+  const globalPreviewImg = document.getElementById('global-preview-img');
+  const globalPreviewVid = document.getElementById('global-preview-vid');
+  const btnRemoveGlobalPreview = document.getElementById('btn-remove-global-preview');
+  const inputGlobalAdTitle = document.getElementById('input-global-ad-title');
+  const inputGlobalAdDuration = document.getElementById('input-global-ad-duration');
+  const globalDurationPresets = document.getElementById('global-duration-presets');
+  const btnSubmitGlobalAd = document.getElementById('btn-submit-global-ad');
+  const globalUploadTvCoverage = document.getElementById('global-upload-tv-coverage');
+
+  let globalPendingFile = null;
+  let globalPendingDataUrl = null;
+  let globalDetectedType = 'IMAGE';
+  let globalDetectedTag = 'FOTO 4K';
+
+  function resetGlobalAdForm() {
+    globalPendingFile = null;
+    globalPendingDataUrl = null;
+    if (inputGlobalAdTitle) inputGlobalAdTitle.value = '';
+    if (globalMediaFileInput) globalMediaFileInput.value = '';
+    if (globalUploadPreview) globalUploadPreview.style.display = 'none';
+    if (globalUploadPrompt) globalUploadPrompt.style.display = 'block';
+    if (globalPreviewImg) {
+      globalPreviewImg.style.display = 'none';
+      globalPreviewImg.src = '';
+    }
+    if (globalPreviewVid) {
+      globalPreviewVid.style.display = 'none';
+      globalPreviewVid.src = '';
+    }
+    if (inputGlobalAdDuration) inputGlobalAdDuration.value = '15';
+    if (globalDurationPresets) {
+      globalDurationPresets.querySelectorAll('.btn-time-pill').forEach(btn => {
+        if (btn.getAttribute('data-dur') === '15') btn.classList.add('active');
+        else btn.classList.remove('active');
+      });
+    }
+  }
+
+  function handleGlobalFileSelect(file) {
+    if (!file) return;
+    const isImage = file.type.startsWith('image/');
+    const isVideo = file.type.startsWith('video/');
+    if (!isImage && !isVideo) {
+      showToast('⚠️ Formato no compatible. Por favor sube una imagen, video MP4 o GIF animado.', '#EF4444');
+      return;
+    }
+
+    globalPendingFile = file;
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (file.type === 'image/gif' || ext === 'gif') {
+      globalDetectedType = 'GIF';
+      globalDetectedTag = 'GIF ANIMADO';
+    } else if (isVideo || ext === 'mp4' || ext === 'webm') {
+      globalDetectedType = 'VIDEO';
+      globalDetectedTag = 'VIDEO MP4';
+    } else {
+      globalDetectedType = 'IMAGE';
+      globalDetectedTag = ext === 'png' ? 'FOTO PNG' : 'FOTO 4K';
+    }
+
+    if (inputGlobalAdTitle && !inputGlobalAdTitle.value.trim()) {
+      inputGlobalAdTitle.value = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, ' ');
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      globalPendingDataUrl = e.target.result;
+      if (globalUploadPrompt) globalUploadPrompt.style.display = 'none';
+      if (globalUploadPreview) globalUploadPreview.style.display = 'block';
+
+      if (globalDetectedType === 'VIDEO') {
+        if (globalPreviewImg) globalPreviewImg.style.display = 'none';
+        if (globalPreviewVid) {
+          globalPreviewVid.style.display = 'block';
+          globalPreviewVid.src = globalPendingDataUrl;
+          globalPreviewVid.play().catch(() => {});
+        }
+      } else {
+        if (globalPreviewVid) globalPreviewVid.style.display = 'none';
+        if (globalPreviewImg) {
+          globalPreviewImg.style.display = 'block';
+          globalPreviewImg.src = globalPendingDataUrl;
+        }
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  if (globalDropZoneUpload) {
+    globalDropZoneUpload.addEventListener('click', (e) => {
+      if (e.target && e.target.id === 'btn-remove-global-preview') return;
+      if (globalMediaFileInput) globalMediaFileInput.click();
+    });
+
+    globalDropZoneUpload.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      globalDropZoneUpload.style.borderColor = '#3B82F6';
+      globalDropZoneUpload.style.background = 'rgba(59, 130, 246, 0.1)';
+    });
+
+    globalDropZoneUpload.addEventListener('dragleave', () => {
+      globalDropZoneUpload.style.borderColor = 'rgba(59, 130, 246, 0.4)';
+      globalDropZoneUpload.style.background = 'rgba(15, 23, 42, 0.5)';
+    });
+
+    globalDropZoneUpload.addEventListener('drop', (e) => {
+      e.preventDefault();
+      globalDropZoneUpload.style.borderColor = 'rgba(59, 130, 246, 0.4)';
+      globalDropZoneUpload.style.background = 'rgba(15, 23, 42, 0.5)';
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        handleGlobalFileSelect(e.dataTransfer.files[0]);
+      }
+    });
+  }
+
+  if (globalMediaFileInput) {
+    globalMediaFileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        handleGlobalFileSelect(e.target.files[0]);
+      }
+    });
+  }
+
+  if (btnRemoveGlobalPreview) {
+    btnRemoveGlobalPreview.addEventListener('click', (e) => {
+      e.stopPropagation();
+      resetGlobalAdForm();
+    });
+  }
+
+  if (globalDurationPresets) {
+    globalDurationPresets.querySelectorAll('.btn-time-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        globalDurationPresets.querySelectorAll('.btn-time-pill').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const dur = btn.getAttribute('data-dur') || '15';
+        if (inputGlobalAdDuration) inputGlobalAdDuration.value = dur;
+      });
+    });
+  }
+
+  if (formUploadGlobalAd) {
+    formUploadGlobalAd.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!globalPendingDataUrl) {
+        showToast('⚠️ Por favor selecciona una imagen, video o GIF para publicar.', '#EF4444');
+        return;
+      }
+
+      const title = (inputGlobalAdTitle ? inputGlobalAdTitle.value.trim() : '') || 'Publicidad General 0Media';
+      const duration = (inputGlobalAdDuration ? parseInt(inputGlobalAdDuration.value, 10) : 15) || 15;
+
+      if (btnSubmitGlobalAd) {
+        btnSubmitGlobalAd.disabled = true;
+        btnSubmitGlobalAd.innerHTML = `<span>⏳</span> Transmitiendo a Todas las Pantallas...`;
+      }
+
+      try {
+        const res = await apiFetch('/api/v1/devices/upload-ad', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: title,
+            durationSeconds: duration,
+            targetTvId: 'ALL',
+            isGlobal: true,
+            isPriority: true,
+            mediaType: globalDetectedType,
+            mediaTag: globalDetectedTag,
+            fileName: globalPendingFile ? globalPendingFile.name : 'publicidad_general.png',
+            dataUrl: globalPendingDataUrl,
+            clientName: 'Administrador (0Media)'
+          })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          showToast(`🎉 ¡Publicidad General "${title}" transmitiéndose con prioridad máxima en todas las pantallas!`, '#10B981');
+          resetGlobalAdForm();
+          await loadDevicesFromBackend();
+          await loadAndRenderGlobalAds();
+        } else {
+          showToast(`⚠️ Error: ${data.error || 'No se pudo subir la publicidad general.'}`, '#EF4444');
+        }
+      } catch (err) {
+        showToast('⚠️ Error al conectar con el servidor.', '#EF4444');
+      } finally {
+        if (btnSubmitGlobalAd) {
+          btnSubmitGlobalAd.disabled = false;
+          btnSubmitGlobalAd.innerHTML = `<span>🚀</span> Publicar en Todas las Pantallas`;
+        }
+      }
+    });
+  }
+
+  if (btnRefreshGlobalAds) {
+    btnRefreshGlobalAds.addEventListener('click', async () => {
+      showToast('🔄 Actualizando estado de la red...', '#3B82F6');
+      await loadDevicesFromBackend();
+      await loadAndRenderGlobalAds();
+    });
+  }
+
+  async function loadAndRenderGlobalAds() {
+    if (!globalAdsContainer) return;
+
+    let globalAds = [];
+    let totalPaired = devices.filter(d => d.isPaired).length;
+
+    try {
+      const res = await apiFetch('/api/v1/admin/global-ads');
+      const data = await res.json();
+      if (data.success && Array.isArray(data.globalAds)) {
+        globalAds = data.globalAds;
+        if (data.totalPairedDevices !== undefined) totalPaired = data.totalPairedDevices;
+      }
+    } catch (e) {
+      // Fallback local desde devices
+      const seen = new Set();
+      devices.forEach(d => {
+        (d.items || []).forEach(it => {
+          if ((it.isGlobal || it.ownerId === 'admin') && !seen.has(it.id)) {
+            seen.add(it.id);
+            globalAds.push({ ...it, activeDevicesCount: totalPaired, totalPairedDevices: totalPaired });
+          }
+        });
+      });
+    }
+
+    if (globalAdsScreenCount) globalAdsScreenCount.textContent = totalPaired;
+    if (globalAdsTotalCount) globalAdsTotalCount.textContent = globalAds.length;
+    if (globalUploadTvCoverage) globalUploadTvCoverage.textContent = `Todas las Pantallas Vinculadas (${totalPaired} TVs)`;
+
+    if (badgeGlobalAdsCount) {
+      if (globalAds.length > 0) {
+        badgeGlobalAdsCount.textContent = globalAds.length;
+        badgeGlobalAdsCount.style.display = 'inline-block';
+      } else {
+        badgeGlobalAdsCount.style.display = 'none';
+      }
+    }
+
+    globalAdsContainer.innerHTML = '';
+
+    if (globalAds.length === 0) {
+      globalAdsContainer.innerHTML = `
+        <div style="grid-column: 1 / -1; background: var(--bg-card); border: 1px dashed rgba(59, 130, 246, 0.3); border-radius: 14px; padding: 48px 20px; text-align: center;">
+          <div style="font-size: 2.8rem; margin-bottom: 12px;">🌐</div>
+          <h4 style="color: #FFF; font-size: 1.2rem; margin-bottom: 6px;">No hay Publicidades Generales activas</h4>
+          <p style="color: var(--text-muted); font-size: 0.88rem; max-width: 520px; margin: 0 auto 16px;">
+            Sube un video, foto o GIF en el formulario superior para emitirlo simultáneamente en todos los televisores vinculados con máxima prioridad.
+          </p>
+        </div>
+      `;
+      return;
+    }
+
+    globalAds.forEach(ad => {
+      const card = document.createElement('div');
+      card.className = 'global-ad-card';
+
+      const isVideo = ad.mediaType === 'VIDEO' || (ad.mimeType && ad.mimeType.startsWith('video/')) || (ad.url && ad.url.endsWith('.mp4'));
+      const mediaHtml = isVideo
+        ? `<video src="${ad.url || ad.remoteUrl}" muted loop onmouseover="this.play()" onmouseout="this.pause()" playsinline></video>`
+        : `<img src="${ad.url || ad.remoteUrl}" alt="${ad.title}" loading="lazy">`;
+
+      const durationSec = ad.durationSeconds || 15;
+      const isPaused = ad.isEnabled === false;
+
+      card.innerHTML = `
+        <div class="global-ad-card-preview">
+          ${mediaHtml}
+          <span style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.8); color: #93C5FD; padding: 3px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; border: 1px solid rgba(59,130,246,0.4);">
+            👑 Admin
+          </span>
+          <span style="position: absolute; top: 10px; right: 10px; background: rgba(16, 185, 129, 0.85); color: #FFF; padding: 3px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 700;">
+            ⚡ Prioridad #1
+          </span>
+          <span style="position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.8); color: #FFF; padding: 3px 8px; border-radius: 6px; font-size: 0.72rem; font-family: var(--font-mono);">
+            ⏱️ ${durationSec}s
+          </span>
+        </div>
+
+        <div class="global-ad-card-body">
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;">
+            <h4 style="color: #FFF; font-size: 1.05rem; margin: 0; line-height: 1.3;">${ad.title}</h4>
+            <span style="font-size: 0.72rem; padding: 3px 8px; border-radius: 12px; font-weight: 700; ${isPaused ? 'background: rgba(100,116,139,0.3); color: #94A3B8;' : 'background: rgba(16,185,129,0.2); color: #34D399;'}">
+              ${isPaused ? '⏸️ En Pausa' : '🟢 Al Aire'}
+            </span>
+          </div>
+
+          <div style="font-size: 0.82rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px;">
+            <div>📺 Cobertura: <strong style="color: #6EE7B7;">Todas las Pantallas (${ad.activeDevicesCount || totalPaired} TVs)</strong></div>
+            <div>⚡ Reproducción: <strong style="color: #FCD34D;">Al inicio del carrusel en cada TV</strong></div>
+          </div>
+
+          <!-- Modificar Duración Rápida -->
+          <div style="margin-top: 4px;">
+            <div style="font-size: 0.74rem; color: var(--text-muted); margin-bottom: 5px;">⏱️ Duración en cada pantalla:</div>
+            <div class="duration-preset-pills" style="gap: 6px;">
+              <button type="button" class="btn-time-pill ${durationSec === 15 ? 'active' : ''} btn-change-global-dur" data-id="${ad.id}" data-dur="15">15 seg</button>
+              <button type="button" class="btn-time-pill ${durationSec === 30 ? 'active' : ''} btn-change-global-dur" data-id="${ad.id}" data-dur="30">30 seg</button>
+              <button type="button" class="btn-time-pill ${durationSec === 60 ? 'active' : ''} btn-change-global-dur" data-id="${ad.id}" data-dur="60">1 min</button>
+            </div>
+          </div>
+
+          <div class="global-ad-actions-row">
+            <button class="btn btn-secondary btn-toggle-global-ad" data-id="${ad.id}" data-enabled="${ad.isEnabled !== false}" style="flex: 1; padding: 7px 10px; font-size: 0.8rem; justify-content: center; gap: 6px;">
+              <span>${isPaused ? '▶️' : '⏸️'}</span> ${isPaused ? 'Reanudar Red' : 'Pausar Red'}
+            </button>
+            <button class="btn btn-secondary btn-delete-global-ad" data-id="${ad.id}" data-title="${ad.title}" style="padding: 7px 12px; font-size: 0.8rem; border-color: rgba(239, 68, 68, 0.4); color: #EF4444;" title="Eliminar de todos los televisores">
+              <span>🗑️</span>
+            </button>
+          </div>
+        </div>
+      `;
+
+      // Event listeners para la tarjeta
+      card.querySelectorAll('.btn-change-global-dur').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const newDur = parseInt(btn.getAttribute('data-dur'), 10);
+          try {
+            await apiFetch('/api/v1/devices/update-ad-duration', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ itemId: ad.id, durationSeconds: newDur, targetTvId: 'ALL' })
+            });
+            showToast(`⏱️ Duración cambiada a ${newDur}s en toda la red de televisores.`, '#10B981');
+            await loadDevicesFromBackend();
+            await loadAndRenderGlobalAds();
+          } catch (e) {
+            showToast('⚠️ No se pudo cambiar la duración.', '#EF4444');
+          }
+        });
+      });
+
+      const btnToggle = card.querySelector('.btn-toggle-global-ad');
+      if (btnToggle) {
+        btnToggle.addEventListener('click', async () => {
+          try {
+            const nextState = ad.isEnabled === false;
+            await apiFetch('/api/v1/devices/toggle-block-ad', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ itemId: ad.id, isEnabled: nextState, targetTvId: 'ALL' })
+            });
+            showToast(`📢 Publicidad ${nextState ? 'activada' : 'pausada'} en toda la red.`, '#3B82F6');
+            await loadDevicesFromBackend();
+            await loadAndRenderGlobalAds();
+          } catch (e) {
+            showToast('⚠️ Error al cambiar estado en la red.', '#EF4444');
+          }
+        });
+      }
+
+      const btnDelete = card.querySelector('.btn-delete-global-ad');
+      if (btnDelete) {
+        btnDelete.addEventListener('click', async () => {
+          if (confirm(`¿Estás seguro de eliminar "${ad.title}" de TODOS los televisores vinculados?`)) {
+            try {
+              await apiFetch('/api/v1/devices/delete-ad', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ itemId: ad.id, targetTvId: 'ALL' })
+              });
+              showToast(`🗑️ "${ad.title}" eliminado de toda la red.`, '#10B981');
+              await loadDevicesFromBackend();
+              await loadAndRenderGlobalAds();
+            } catch (e) {
+              showToast('⚠️ Error al eliminar anuncio de la red.', '#EF4444');
+            }
+          }
+        });
+      }
+
+      globalAdsContainer.appendChild(card);
     });
   }
 
