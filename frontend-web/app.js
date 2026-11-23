@@ -1000,31 +1000,13 @@ document.addEventListener('DOMContentLoaded', () => {
             ${item.rejectionReason ? `<span style="color:#F87171;font-size:0.75rem;">• Motivo: ${item.rejectionReason}</span>` : ''}
           </div>
 
-          <!-- Selector y Mover de Tiempo Individual: Stepper, Slider de arrastre, Input directo y Presets -->
+          <!-- Selector de Permanencia por Anuncio: 15 seg, 30 seg, 1 min -->
           <div class="item-duration-row">
-            <div class="dur-ctrl-group">
-              <span class="item-duration-label">⏱️ Permanencia:</span>
-              
-              <!-- Stepper con input numérico directo -->
-              <div class="time-stepper-box">
-                <button type="button" class="btn-time-step btn-step-minus" data-idx="${index}" title="Restar 1 segundo" ${!isOwnerOrAdmin ? 'disabled' : ''}>−</button>
-                <input type="number" min="3" max="180" class="input-time-number" data-idx="${index}" value="${itemDur}" ${!isOwnerOrAdmin ? 'disabled' : ''}>
-                <span class="time-unit-label">seg</span>
-                <button type="button" class="btn-time-step btn-step-plus" data-idx="${index}" title="Sumar 1 segundo" ${!isOwnerOrAdmin ? 'disabled' : ''}>+</button>
-              </div>
-
-              <!-- Slider interactivo para mover físicamente el tiempo -->
-              <div class="time-slider-container">
-                <input type="range" min="3" max="60" value="${Math.min(60, itemDur)}" class="item-time-slider" data-idx="${index}" title="Mover para ajustar tiempo de permanencia" ${!isOwnerOrAdmin ? 'disabled' : ''}>
-                <span class="slider-val-badge" id="slider-badge-${index}">${itemDur}s</span>
-              </div>
-            </div>
-
-            <!-- Píldoras rápidas para este anuncio -->
+            <span class="item-duration-label">⏱️ Permanencia:</span>
             <div class="duration-preset-pills duration-card-pills" data-idx="${index}">
-              ${[5, 10, 15, 20, 30, 45, 60].map(sec => `
-                <button type="button" class="btn-time-pill mini ${itemDur === sec ? 'active' : ''}" data-sec="${sec}" ${!isOwnerOrAdmin ? 'disabled' : ''}>${sec}s</button>
-              `).join('')}
+              <button type="button" class="btn-time-pill mini ${itemDur === 15 ? 'active' : ''}" data-sec="15" ${!isOwnerOrAdmin ? 'disabled' : ''}>15 seg</button>
+              <button type="button" class="btn-time-pill mini ${itemDur === 30 ? 'active' : ''}" data-sec="30" ${!isOwnerOrAdmin ? 'disabled' : ''}>30 seg</button>
+              <button type="button" class="btn-time-pill mini ${itemDur === 60 ? 'active' : ''}" data-sec="60" ${!isOwnerOrAdmin ? 'disabled' : ''}>1 min</button>
             </div>
           </div>
 
@@ -1048,119 +1030,37 @@ document.addEventListener('DOMContentLoaded', () => {
     // Aplicar estado del filtro por cliente
     applyClientFilter();
 
-    // Función unificada para actualizar el tiempo de permanencia particular
-    async function updateItemPermanenceTime(item, newDur, cardEl, idx) {
-      if (!item) return;
-      const validSeconds = Math.max(3, Math.min(180, parseInt(newDur) || 15));
-      item.durationSeconds = validSeconds;
-
-      // Actualizar visualmente en la tarjeta
-      if (cardEl) {
-        const inputNum = cardEl.querySelector('.input-time-number');
-        if (inputNum) inputNum.value = validSeconds;
-
-        const slider = cardEl.querySelector('.item-time-slider');
-        if (slider) slider.value = Math.min(60, validSeconds);
-
-        const badge = cardEl.querySelector('.slider-val-badge');
-        if (badge) badge.textContent = `${validSeconds}s`;
-
-        const pills = cardEl.querySelectorAll('.duration-card-pills .btn-time-pill');
-        pills.forEach(p => {
-          const sec = parseInt(p.getAttribute('data-sec'));
-          if (sec === validSeconds) p.classList.add('active');
-          else p.classList.remove('active');
-        });
-      }
-
-      saveDevices();
-      updatePlaylistStats(device);
-
-      if (currentSelectedTvId === device.id) {
-        updateSimulator(device.items);
-      }
-
-      try {
-        await apiFetch('/api/v1/devices/update-ad-duration', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ itemId: item.id, durationSeconds: validSeconds, targetTvId: device.id })
-        });
-        showToast(`⏱️ "${item.title}": permanencia cambiada a ${validSeconds}s.`, '#10B981');
-      } catch (err) {
-        showToast('⚠️ No se pudo guardar la duración en el servidor.', '#EF4444');
-      }
-    }
-
-    // 4. Conectar Eventos: Stepper [-] y [+]
-    tvPlaylistItemsContainer.querySelectorAll('.btn-step-minus').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const idx = parseInt(e.currentTarget.getAttribute('data-idx'));
-        const item = device.items[idx];
-        const card = e.currentTarget.closest('.playlist-item-card');
-        const cur = parseInt(item.durationSeconds) || 15;
-        updateItemPermanenceTime(item, cur - 1, card, idx);
-      });
-    });
-
-    tvPlaylistItemsContainer.querySelectorAll('.btn-step-plus').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const idx = parseInt(e.currentTarget.getAttribute('data-idx'));
-        const item = device.items[idx];
-        const card = e.currentTarget.closest('.playlist-item-card');
-        const cur = parseInt(item.durationSeconds) || 15;
-        updateItemPermanenceTime(item, cur + 1, card, idx);
-      });
-    });
-
-    // 5. Conectar Eventos: Input Numérico Directo
-    tvPlaylistItemsContainer.querySelectorAll('.input-time-number').forEach(input => {
-      input.addEventListener('change', (e) => {
-        const idx = parseInt(e.currentTarget.getAttribute('data-idx'));
-        const item = device.items[idx];
-        const card = e.currentTarget.closest('.playlist-item-card');
-        updateItemPermanenceTime(item, e.currentTarget.value, card, idx);
-      });
-      input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          e.currentTarget.blur();
-        }
-      });
-    });
-
-    // 6. Conectar Eventos: Slider para Mover el Tiempo
-    tvPlaylistItemsContainer.querySelectorAll('.item-time-slider').forEach(slider => {
-      // Feedback en tiempo real mientras se mueve / arrastra el slider
-      slider.addEventListener('input', (e) => {
-        const idx = parseInt(e.currentTarget.getAttribute('data-idx'));
-        const card = e.currentTarget.closest('.playlist-item-card');
-        const val = parseInt(e.currentTarget.value);
-        if (card) {
-          const badge = card.querySelector('.slider-val-badge');
-          if (badge) badge.textContent = `${val}s`;
-          const numInput = card.querySelector('.input-time-number');
-          if (numInput) numInput.value = val;
-        }
-      });
-      // Guardar al soltar
-      slider.addEventListener('change', (e) => {
-        const idx = parseInt(e.currentTarget.getAttribute('data-idx'));
-        const item = device.items[idx];
-        const card = e.currentTarget.closest('.playlist-item-card');
-        updateItemPermanenceTime(item, e.currentTarget.value, card, idx);
-      });
-    });
-
-    // 7. Conectar Eventos: Píldoras de Presets Rápidos
+    // 4. Ajuste directo de permanencia individual por anuncio: 15 seg, 30 seg, 1 min
     tvPlaylistItemsContainer.querySelectorAll('.duration-card-pills .btn-time-pill').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', async (e) => {
         const parentPills = e.currentTarget.closest('.duration-card-pills');
         const idx = parseInt(parentPills.getAttribute('data-idx'));
         const item = device.items[idx];
-        const card = e.currentTarget.closest('.playlist-item-card');
         const newDur = parseInt(e.currentTarget.getAttribute('data-sec')) || 15;
-        updateItemPermanenceTime(item, newDur, card, idx);
+        if (item) {
+          parentPills.querySelectorAll('.btn-time-pill').forEach(b => b.classList.remove('active'));
+          e.currentTarget.classList.add('active');
+
+          item.durationSeconds = newDur;
+          saveDevices();
+          updatePlaylistStats(device);
+
+          if (currentSelectedTvId === device.id) {
+            updateSimulator(device.items);
+          }
+
+          const label = newDur === 60 ? '1 min' : `${newDur} seg`;
+          try {
+            await apiFetch('/api/v1/devices/update-ad-duration', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ itemId: item.id, durationSeconds: newDur, targetTvId: device.id })
+            });
+            showToast(`⏱️ "${item.title}": permanencia cambiada a ${label}.`, '#10B981');
+          } catch (err) {
+            showToast('⚠️ No se pudo guardar la duración en el servidor.', '#EF4444');
+          }
+        }
       });
     });
 
