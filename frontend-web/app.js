@@ -148,10 +148,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let cachedWorkingApiBase = null;
 
+  async function loadPublicScreensForLogin() {
+    const loginTvSelect = document.getElementById('login-tv-select');
+    if (!loginTvSelect) return;
+    try {
+      const res = await fetch('/api/v1/public/screens');
+      const data = await res.json();
+      if (data.success && Array.isArray(data.screens)) {
+        loginTvSelect.innerHTML = '';
+        if (data.screens.length === 0) {
+          loginTvSelect.innerHTML = '<option value="">(No hay pantallas vinculadas disponibles)</option>';
+          return;
+        }
+        loginTvSelect.innerHTML = '<option value="">-- Selecciona el Televisor donde anunciarás --</option>';
+        data.screens.forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s.id;
+          opt.textContent = `📺 ${s.name} (${s.location}) — Tarifa: ${s.tariff} [Cupos: ${s.activeAdsCount}/${s.maxSlots}]`;
+          loginTvSelect.appendChild(opt);
+        });
+      }
+    } catch (e) {
+      console.warn('No se pudo cargar la lista pública de pantallas:', e);
+    }
+  }
+
   function openLoginModal() {
     const modal = document.getElementById('login-modal');
     if (modal) {
       modal.classList.add('open');
+      loadPublicScreensForLogin();
       const inputPass = document.getElementById('login-password');
       if (inputPass) setTimeout(() => inputPass.focus(), 150);
     }
@@ -219,11 +245,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const uploadNotice = document.getElementById('upload-client-notice');
     const inputClientName = document.getElementById('input-ad-client-name');
     const inputClientPhone = document.getElementById('input-ad-client-phone');
+    const adminNavGroup = document.getElementById('admin-nav-group');
+    const userNavGroup = document.getElementById('user-nav-group');
+    const sidebarAvatar = document.getElementById('sidebar-user-avatar');
+    const sidebarName = document.getElementById('sidebar-user-name');
+    const sidebarRole = document.getElementById('sidebar-user-role');
 
     if (currentUser) {
       if (currentUser.role === 'ADMIN') {
         if (roleIcon) roleIcon.textContent = '👑';
         if (displayName) displayName.textContent = 'Admin Maestro';
+        if (sidebarAvatar) sidebarAvatar.textContent = 'AD';
+        if (sidebarName) sidebarName.textContent = 'Administrador';
+        if (sidebarRole) sidebarRole.textContent = 'Control Maestro 0Media';
+        if (adminNavGroup) adminNavGroup.style.display = 'block';
+        if (userNavGroup) userNavGroup.style.display = 'none';
         if (btnUsersModal) btnUsersModal.style.display = 'none';
         if (btnPairModal) btnPairModal.style.display = 'inline-flex';
         if (btnRevokeSession) btnRevokeSession.style.display = 'inline-flex';
@@ -232,25 +268,35 @@ document.addEventListener('DOMContentLoaded', () => {
           inputClientName.value = '0Media Publicidad';
           inputClientName.readOnly = false;
         }
+        loadAndRenderApprovals();
       } else {
-        // Rol DEVICE_USER o CLIENT
+        // Rol DEVICE_USER o CLIENT: Usuario que quiere poner publicidad en un televisor
         if (roleIcon) roleIcon.textContent = '📺';
-        if (displayName) displayName.textContent = currentUser.deviceName ? `${currentUser.deviceName} (${currentUser.username})` : (currentUser.company || currentUser.username);
+        const tvTitle = currentUser.deviceName || currentUser.company || currentUser.username;
+        if (displayName) displayName.textContent = tvTitle;
+        if (sidebarAvatar) sidebarAvatar.textContent = 'TV';
+        if (sidebarName) sidebarName.textContent = tvTitle;
+        if (sidebarRole) sidebarRole.textContent = 'Usuario Anunciante';
+        if (adminNavGroup) adminNavGroup.style.display = 'none';
+        if (userNavGroup) userNavGroup.style.display = 'block';
         if (btnUsersModal) btnUsersModal.style.display = 'none';
         if (btnPairModal) btnPairModal.style.display = 'none';
         if (btnRevokeSession) btnRevokeSession.style.display = 'none';
         if (uploadNotice) uploadNotice.style.display = 'block';
         if (inputClientName) {
-          inputClientName.value = currentUser.deviceName || currentUser.company || currentUser.name || currentUser.username;
-          inputClientName.readOnly = true;
+          inputClientName.value = currentUser.name || currentUser.username || tvTitle;
+          inputClientName.readOnly = false;
         }
         if (inputClientPhone && currentUser.phone) {
           inputClientPhone.value = currentUser.phone;
         }
+        renderUserPortal();
       }
     } else {
       if (roleIcon) roleIcon.textContent = '👤';
       if (displayName) displayName.textContent = 'Sin Identificar';
+      if (adminNavGroup) adminNavGroup.style.display = 'block';
+      if (userNavGroup) userNavGroup.style.display = 'none';
     }
   }
 
@@ -259,6 +305,9 @@ document.addEventListener('DOMContentLoaded', () => {
     renderDevices();
     updateStats();
     renderTvSelector();
+    if (currentUser && (currentUser.role === 'DEVICE_USER' || currentUser.role === 'CLIENT')) {
+      renderUserPortal();
+    }
   }
 
   let pairingModalDismissed = false;
@@ -311,10 +360,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // ================= 4. NAVEGACIÓN Y RUTAS =================
   const titlesMap = {
     devices: "Pantallas en Vivo — Monitoreo en Tiempo Real",
-    playlists: "Lista de Campañas — Publicidad por Televisor"
+    approvals: "Bandeja de Aprobación de Publicidades",
+    playlists: "Lista de Campañas — Publicidad por Televisor",
+    'user-portal': "Panel de Anunciante — Mi Pantalla y Publicidad"
   };
 
   function switchView(targetView) {
+    // Si es usuario normal de TV, siempre anclar a su portal de anunciante
+    if (currentUser && currentUser.role === 'DEVICE_USER' && targetView !== 'user-portal') {
+      targetView = 'user-portal';
+    }
+
     navItems.forEach(nav => {
       if (nav.getAttribute('data-view') === targetView) {
         nav.classList.add('active');
@@ -337,6 +393,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (targetView === 'playlists') {
       renderTvSelector();
+    } else if (targetView === 'approvals') {
+      loadAndRenderApprovals();
+    } else if (targetView === 'user-portal') {
+      renderUserPortal();
     }
 
     if (window.location.hash !== '#' + targetView) {
@@ -346,10 +406,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function handleHash() {
     const hash = window.location.hash.replace('#', '');
-    if (hash === 'playlists') {
+    if (hash === 'approvals') {
+      switchView('approvals');
+    } else if (hash === 'playlists') {
       switchView('playlists');
+    } else if (hash === 'user-portal') {
+      switchView('user-portal');
     } else {
-      switchView('devices');
+      switchView(currentUser && currentUser.role === 'DEVICE_USER' ? 'user-portal' : 'devices');
     }
   }
 
@@ -1471,10 +1535,12 @@ document.addEventListener('DOMContentLoaded', () => {
           saveDevices();
           setupSimulatorForTv(targetTv);
           closeUploadModal();
-          if (currentUser && currentUser.role === 'CLIENT') {
-            showToast(`📨 ¡"${title}" subido con éxito! Pendiente de aprobación administrativa antes de salir al aire.`, '#F59E0B');
+          if (currentUser && (currentUser.role === 'DEVICE_USER' || currentUser.role === 'CLIENT')) {
+            showToast(`📨 ¡"${title}" enviado con éxito! En espera de aprobación por el Administrador antes de salir al aire.`, '#F59E0B');
+            renderUserPortal();
           } else {
-            showToast(`🎉 ¡"${title}" subido al servidor! El televisor lo descargará y mostrará inmediatamente.`, '#10B981');
+            showToast(`🎉 ¡"${title}" publicado y transmitiendo en la pantalla!`, '#10B981');
+            loadAndRenderApprovals();
           }
         } else {
           throw new Error(resData.error || "Error al procesar la subida");
@@ -1815,15 +1881,52 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ================= GESTIÓN DE SESIÓN Y LOGIN ADMINISTRADOR / ANUNCIANTE =================
+  // ================= GESTIÓN DE SESIÓN Y LOGIN CON 2 OPCIONES: ADMIN Y USUARIO =================
+  const tabLoginAdmin = document.getElementById('tab-login-admin');
+  const tabLoginUser = document.getElementById('tab-login-user');
   const formAdminLogin = document.getElementById('form-admin-login');
+  const formUserLogin = document.getElementById('form-user-login');
+  const loginErrorAlert = document.getElementById('login-error-alert');
+  const btnToggleUserLoginType = document.getElementById('btn-toggle-user-login-type');
+  const loginUserCustomWrap = document.getElementById('login-user-custom-wrap');
+
+  // Alternar entre las 2 opciones del modal
+  if (tabLoginAdmin && tabLoginUser) {
+    tabLoginAdmin.addEventListener('click', () => {
+      tabLoginAdmin.classList.add('active');
+      tabLoginUser.classList.remove('active');
+      if (formAdminLogin) formAdminLogin.style.display = 'block';
+      if (formUserLogin) formUserLogin.style.display = 'none';
+      if (loginErrorAlert) loginErrorAlert.style.display = 'none';
+    });
+
+    tabLoginUser.addEventListener('click', () => {
+      tabLoginUser.classList.add('active');
+      tabLoginAdmin.classList.remove('active');
+      if (formAdminLogin) formAdminLogin.style.display = 'none';
+      if (formUserLogin) formUserLogin.style.display = 'block';
+      if (loginErrorAlert) loginErrorAlert.style.display = 'none';
+      loadPublicScreensForLogin();
+    });
+  }
+
+  if (btnToggleUserLoginType && loginUserCustomWrap) {
+    btnToggleUserLoginType.addEventListener('click', () => {
+      const isHidden = loginUserCustomWrap.style.display === 'none';
+      loginUserCustomWrap.style.display = isHidden ? 'flex' : 'none';
+      btnToggleUserLoginType.textContent = isHidden ?
+        '¿Elegir televisor de la lista en vez de escribir usuario?' :
+        '¿Ingresar por nombre de usuario en vez de lista?';
+    });
+  }
+
+  // 1. Enviar formulario de Administrador
   if (formAdminLogin) {
     formAdminLogin.addEventListener('submit', async (e) => {
       e.preventDefault();
       const usernameInput = document.getElementById('login-username');
       const passwordInput = document.getElementById('login-password');
-      const errorAlert = document.getElementById('login-error-alert');
-      const submitBtn = document.getElementById('btn-submit-login');
+      const submitBtn = document.getElementById('btn-submit-admin-login');
 
       const username = usernameInput ? usernameInput.value.trim() : 'admin';
       const password = passwordInput ? passwordInput.value : '';
@@ -1831,9 +1934,9 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         if (submitBtn) {
           submitBtn.disabled = true;
-          submitBtn.innerHTML = '<span>⏳</span> Verificando...';
+          submitBtn.innerHTML = '<span>⏳</span> Verificando Administrador...';
         }
-        if (errorAlert) errorAlert.style.display = 'none';
+        if (loginErrorAlert) loginErrorAlert.style.display = 'none';
 
         const res = await apiFetch('/api/v1/admin/login', {
           method: 'POST',
@@ -1850,31 +1953,98 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           if (passwordInput) passwordInput.value = '';
           closeLoginModal();
-          showToast(`✅ ¡Bienvenido, ${currentUser ? (currentUser.company || currentUser.name) : 'Usuario'}!`, '#10B981');
+          showToast(`👑 ¡Bienvenido Administrador Maestro!`, '#10B981');
           await loadDevicesFromBackend();
+          switchView('devices');
         } else {
-          if (errorAlert) {
-            errorAlert.innerText = data.error || 'Credenciales incorrectas.';
-            errorAlert.style.display = 'block';
+          if (loginErrorAlert) {
+            loginErrorAlert.innerText = data.error || 'Credenciales de administrador incorrectas.';
+            loginErrorAlert.style.display = 'block';
           }
         }
       } catch (err) {
-        if (errorAlert) {
-          errorAlert.innerText = err.message || 'Error de conexión con el servidor.';
-          errorAlert.style.display = 'block';
+        if (loginErrorAlert) {
+          loginErrorAlert.innerText = err.message || 'Error de conexión con el servidor.';
+          loginErrorAlert.style.display = 'block';
         }
       } finally {
         if (submitBtn) {
           submitBtn.disabled = false;
-          submitBtn.innerHTML = '<span>🚀</span> Entrar al Panel de Control';
+          submitBtn.innerHTML = '<span>🚀</span> Entrar al Panel de Administrador';
         }
       }
     });
   }
 
-  const btnAdminLogout = document.getElementById('btn-admin-logout');
-  if (btnAdminLogout) {
-    btnAdminLogout.addEventListener('click', async () => {
+  // 2. Enviar formulario de Usuario Anunciante (Querer poner publicidad en un TV)
+  if (formUserLogin) {
+    formUserLogin.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const selectTv = document.getElementById('login-tv-select');
+      const passwordInput = document.getElementById('login-tv-password');
+      const customUserInput = document.getElementById('login-tv-username');
+      const submitBtn = document.getElementById('btn-submit-user-login');
+
+      const deviceId = selectTv ? selectTv.value : '';
+      const password = passwordInput ? passwordInput.value : '';
+      const username = customUserInput ? customUserInput.value.trim() : '';
+
+      if (!deviceId && !username) {
+        if (loginErrorAlert) {
+          loginErrorAlert.innerText = 'Por favor selecciona un televisor o escribe tu usuario asignado.';
+          loginErrorAlert.style.display = 'block';
+        }
+        return;
+      }
+
+      try {
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<span>⏳</span> Accediendo al Televisor...';
+        }
+        if (loginErrorAlert) loginErrorAlert.style.display = 'none';
+
+        const res = await apiFetch('/api/v1/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deviceId, username, password })
+        });
+
+        const data = await res.json();
+        if (data.success && data.token) {
+          localStorage.setItem('0media_auth_token', data.token);
+          if (data.user) {
+            currentUser = data.user;
+            applyUserRoleUI();
+          }
+          if (passwordInput) passwordInput.value = '';
+          closeLoginModal();
+          showToast(`📺 ¡Bienvenido a ${currentUser.deviceName || 'tu Pantalla'}!`, '#10B981');
+          await loadDevicesFromBackend();
+          switchView('user-portal');
+        } else {
+          if (loginErrorAlert) {
+            loginErrorAlert.innerText = data.error || 'Clave de acceso incorrecta para este televisor.';
+            loginErrorAlert.style.display = 'block';
+          }
+        }
+      } catch (err) {
+        if (loginErrorAlert) {
+          loginErrorAlert.innerText = err.message || 'Error de conexión con el servidor.';
+          loginErrorAlert.style.display = 'block';
+        }
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<span>🎬</span> Entrar al Panel de Usuario (Poner Publicidad)';
+        }
+      }
+    });
+  }
+
+  // Cerrar Sesión para Administrador y Usuario
+  document.querySelectorAll('#btn-admin-logout').forEach(btn => {
+    btn.addEventListener('click', async () => {
       try {
         await apiFetch('/api/v1/admin/logout', { method: 'POST' });
       } catch (e) {}
@@ -1883,6 +2053,302 @@ document.addEventListener('DOMContentLoaded', () => {
       applyUserRoleUI();
       showToast('🔒 Sesión cerrada.', '#64748B');
       openLoginModal();
+    });
+  });
+
+  // ================= BANDEJA DE APROBACIONES PENDIENTES (ADMIN EXCLUSIVO) =================
+  const pendingApprovalsContainer = document.getElementById('pending-approvals-container');
+  const badgePendingCount = document.getElementById('badge-pending-count');
+  const btnRefreshApprovals = document.getElementById('btn-refresh-approvals');
+
+  async function loadAndRenderApprovals() {
+    if (!pendingApprovalsContainer) return;
+    try {
+      const res = await apiFetch('/api/v1/admin/pending-approvals');
+      const data = await res.json();
+      if (!data.success || !Array.isArray(data.pendingAds)) return;
+
+      const pendingAds = data.pendingAds;
+      if (badgePendingCount) {
+        badgePendingCount.textContent = String(pendingAds.length);
+        badgePendingCount.style.display = pendingAds.length > 0 ? 'inline-block' : 'none';
+      }
+
+      pendingApprovalsContainer.innerHTML = '';
+      if (pendingAds.length === 0) {
+        pendingApprovalsContainer.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; padding: 48px 24px; background: rgba(30, 41, 59, 0.4); border-radius: 16px; border: 1px dashed var(--border-subtle); max-width: 600px; margin: 30px auto;">
+            <div style="font-size: 3rem; margin-bottom: 12px;">🎉 ✅</div>
+            <h4 style="color: #FFF; font-size: 1.25rem; margin-bottom: 8px;">¡Bandeja de Aprobaciones al Día!</h4>
+            <p style="color: var(--text-muted); font-size: 0.88rem;">
+              No hay publicidades pendientes de aprobación en este momento. Cuando un usuario suba un anuncio a cualquiera de tus televisores, llegará aquí de inmediato para que lo revises.
+            </p>
+          </div>
+        `;
+        return;
+      }
+
+      pendingAds.forEach(ad => {
+        const card = document.createElement('div');
+        card.className = 'approval-card';
+        const isVideo = ad.mediaType === 'VIDEO' || (ad.mimeType && ad.mimeType.startsWith('video/'));
+        const mediaHtml = isVideo
+          ? `<video src="${ad.remoteUrl || ad.url}" controls style="width:100%;height:100%;object-fit:cover;"></video>`
+          : `<img src="${ad.remoteUrl || ad.url}" alt="${ad.title}" style="width:100%;height:100%;object-fit:cover;">`;
+
+        card.innerHTML = `
+          <div class="approval-card-preview">
+            ${mediaHtml}
+            <span style="position:absolute;top:10px;left:10px;background:rgba(0,0,0,0.8);color:#FCD34D;padding:3px 8px;border-radius:6px;font-size:0.75rem;font-weight:700;">
+              ⏳ Pendiente de Aprobación
+            </span>
+            <span style="position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,0.8);color:#FFF;padding:3px 8px;border-radius:6px;font-size:0.75rem;font-family:var(--font-mono);">
+              ⏱️ ${ad.durationSeconds}s
+            </span>
+          </div>
+          <div class="approval-card-body">
+            <h4 style="color:#FFF;font-size:1.05rem;margin:0;">${ad.title}</h4>
+            <div style="font-size:0.83rem;color:var(--text-muted);display:flex;flex-direction:column;gap:5px;">
+              <div>👤 <strong>Anunciante:</strong> ${ad.clientName || 'Cliente'}</div>
+              ${ad.clientPhone ? `<div>📱 <strong>Teléfono:</strong> ${ad.clientPhone}</div>` : ''}
+              <div>📺 <strong>Televisor de destino:</strong> ${ad.deviceName} (${ad.deviceLocation})</div>
+              <div>💵 <strong>Tarifa:</strong> ${ad.deviceTariff}</div>
+              ${ad.validFrom || ad.validTo ? `<div>📅 <strong>Vigencia:</strong> ${ad.validFrom || 'Inmediata'} al ${ad.validTo || 'Indefinida'}</div>` : ''}
+            </div>
+          </div>
+          <div class="approval-card-footer">
+            <button class="btn btn-danger btn-admin-reject" data-item-id="${ad.id}" data-tv-id="${ad.deviceId}" data-title="${ad.title}" style="padding:7px 14px;font-size:0.82rem;">
+              <span>❌</span> Rechazar
+            </button>
+            <button class="btn btn-primary btn-admin-approve" data-item-id="${ad.id}" data-tv-id="${ad.deviceId}" data-title="${ad.title}" style="padding:7px 16px;font-size:0.82rem;background:#10B981;border-color:#10B981;">
+              <span>✅</span> Aprobar Publicidad
+            </button>
+          </div>
+        `;
+        pendingApprovalsContainer.appendChild(card);
+      });
+
+      // Eventos de botones Aprobar y Rechazar
+      pendingApprovalsContainer.querySelectorAll('.btn-admin-approve').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const itemId = e.currentTarget.getAttribute('data-item-id');
+          const targetTvId = e.currentTarget.getAttribute('data-tv-id');
+          const title = e.currentTarget.getAttribute('data-title');
+          try {
+            const res = await apiFetch('/api/v1/devices/approve-ad', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ itemId, targetTvId })
+            });
+            const resData = await res.json();
+            if (resData.success) {
+              showToast(`🎉 ¡"${title}" APROBADO! Ya está proyectándose en vivo en el televisor.`, '#10B981');
+              await loadDevicesFromBackend();
+              loadAndRenderApprovals();
+            } else {
+              showToast(`⚠️ ${resData.error || 'Error al aprobar'}`, '#EF4444');
+            }
+          } catch (err) {
+            showToast('⚠️ Error al conectar con el servidor.', '#EF4444');
+          }
+        });
+      });
+
+      pendingApprovalsContainer.querySelectorAll('.btn-admin-reject').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const itemId = e.currentTarget.getAttribute('data-item-id');
+          const targetTvId = e.currentTarget.getAttribute('data-tv-id');
+          const title = e.currentTarget.getAttribute('data-title');
+          const reason = prompt(`Indica el motivo del rechazo para "${title}":`, "Comprobante de pago pendiente o ajuste de contenido requerido");
+          if (reason !== null) {
+            try {
+              const res = await apiFetch('/api/v1/devices/reject-ad', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ itemId, targetTvId, reason })
+              });
+              const resData = await res.json();
+              if (resData.success) {
+                showToast(`❌ Anuncio "${title}" rechazado.`, '#EF4444');
+                await loadDevicesFromBackend();
+                loadAndRenderApprovals();
+              } else {
+                showToast(`⚠️ ${resData.error || 'Error al rechazar'}`, '#EF4444');
+              }
+            } catch (err) {
+              showToast('⚠️ Error al conectar con el servidor.', '#EF4444');
+            }
+          }
+        });
+      });
+    } catch (err) {
+      console.warn('Error al cargar aprobaciones:', err);
+    }
+  }
+
+  if (btnRefreshApprovals) {
+    btnRefreshApprovals.addEventListener('click', () => {
+      loadAndRenderApprovals();
+      showToast('🔄 Lista de aprobaciones actualizada.', '#10B981');
+    });
+  }
+
+  // ================= PANEL DE USUARIO ANUNCIANTE (PONER PUBLICIDAD) =================
+  const userPortalAdsContainer = document.getElementById('user-portal-ads-container');
+  const userPortalTvName = document.getElementById('user-portal-tv-name');
+  const userPortalTvLocation = document.getElementById('user-portal-tv-location');
+  const userPortalTvTariff = document.getElementById('user-portal-tv-tariff');
+  const userPortalTvSlots = document.getElementById('user-portal-tv-slots');
+  const btnUserOpenUpload = document.getElementById('btn-user-open-upload');
+  const btnRefreshUserAds = document.getElementById('btn-refresh-user-ads');
+
+  function renderUserPortal() {
+    if (!userPortalAdsContainer) return;
+    const myDevice = devices.length > 0 ? devices[0] : null;
+    if (!myDevice) {
+      if (userPortalTvName) userPortalTvName.textContent = 'Ninguna pantalla vinculada';
+      userPortalAdsContainer.innerHTML = '<div style="color:var(--text-muted);padding:24px;text-align:center;">No tienes un televisor asignado.</div>';
+      return;
+    }
+
+    if (userPortalTvName) userPortalTvName.textContent = myDevice.name;
+    if (userPortalTvLocation) userPortalTvLocation.textContent = `📍 ${myDevice.location}`;
+    if (userPortalTvTariff) userPortalTvTariff.textContent = `💵 Tarifa: ${myDevice.tariff || '$50.00 / mes'}`;
+    const activeAdsCount = (myDevice.items || []).filter(x => x.isEnabled !== false && x.approvalStatus === 'APPROVED').length;
+    if (userPortalTvSlots) userPortalTvSlots.textContent = `📊 Cupos: ${activeAdsCount} / ${myDevice.maxSlots || 10} ocupados`;
+
+    const items = myDevice.items || [];
+    userPortalAdsContainer.innerHTML = '';
+
+    if (items.length === 0) {
+      userPortalAdsContainer.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 48px 24px; background: rgba(30, 41, 59, 0.4); border-radius: 16px; border: 1px dashed var(--border-subtle); max-width: 580px; margin: 20px auto;">
+          <div style="font-size: 3rem; margin-bottom: 12px;">📢 🎬</div>
+          <h4 style="color: #FFF; font-size: 1.25rem; margin-bottom: 8px;">Aún no tienes publicidades en esta pantalla</h4>
+          <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 18px;">
+            Sube tu primera foto, video o GIF animado para proyectarlo en este televisor ante tus clientes.
+          </p>
+          <button class="btn btn-primary" id="btn-user-trigger-upload" style="padding: 10px 22px; font-size: 0.95rem;">
+            <span>➕</span> Subir Mi Primera Publicidad
+          </button>
+        </div>
+      `;
+      const triggerBtn = document.getElementById('btn-user-trigger-upload');
+      if (triggerBtn && mediaFileInput) {
+        triggerBtn.addEventListener('click', () => mediaFileInput.click());
+      }
+      return;
+    }
+
+    items.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'user-ad-card';
+
+      let statusBadge = '';
+      let statusDesc = '';
+      if (item.approvalStatus === 'PENDING') {
+        statusBadge = '<span class="user-ad-status-badge badge-status-pending">⏳ En Espera de Aprobación</span>';
+        statusDesc = '<div style="font-size:0.78rem;color:#FCD34D;">ℹ️ El Administrador está revisando tu anuncio antes de ponerlo al aire.</div>';
+      } else if (item.approvalStatus === 'REJECTED') {
+        statusBadge = '<span class="user-ad-status-badge badge-status-rejected">🔴 Rechazado</span>';
+        statusDesc = `<div style="font-size:0.78rem;color:#FCA5A5;">Motivo: ${item.rejectionReason || 'Contenido no aprobado.'}</div>`;
+      } else {
+        statusBadge = item.isEnabled !== false
+          ? '<span class="user-ad-status-badge badge-status-approved">🟢 Transmitiendo al Aire</span>'
+          : '<span class="user-ad-status-badge" style="background:rgba(100,116,139,0.3);color:#94A3B8;">⏸️ En Pausa</span>';
+        statusDesc = `<div style="font-size:0.8rem;color:#94A3B8;">📊 <strong>${item.playCount || 0}</strong> emisiones registradas en este TV</div>`;
+      }
+
+      const isVideo = item.mediaType === 'VIDEO' || (item.mimeType && item.mimeType.startsWith('video/'));
+      const mediaHtml = isVideo
+        ? `<video src="${item.remoteUrl || item.url}" muted style="width:100%;height:100%;object-fit:cover;"></video>`
+        : `<img src="${item.remoteUrl || item.url}" alt="${item.title}" style="width:100%;height:100%;object-fit:cover;">`;
+
+      card.innerHTML = `
+        <div class="user-ad-card-preview">
+          ${mediaHtml}
+          <span style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.8);color:#FFF;padding:2px 7px;border-radius:4px;font-size:0.72rem;font-family:var(--font-mono);">
+            ⏱️ ${item.durationSeconds}s
+          </span>
+        </div>
+        <div class="user-ad-card-body">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+            <h4 style="color:#FFF;font-size:0.98rem;margin:0;">${item.title}</h4>
+            ${statusBadge}
+          </div>
+          ${statusDesc}
+          ${item.validFrom || item.validTo ? `<div style="font-size:0.76rem;color:var(--text-muted);">📅 Vigencia: ${item.validFrom || 'Inmediata'} al ${item.validTo || 'Indefinida'}</div>` : ''}
+        </div>
+        <div style="padding:10px 14px;background:rgba(15,23,42,0.6);border-top:1px solid var(--border-subtle);display:flex;justify-content:space-between;align-items:center;">
+          ${item.approvalStatus === 'APPROVED' ? `
+            <button class="btn btn-secondary btn-user-toggle-pause" data-id="${item.id}" style="padding:5px 10px;font-size:0.75rem;">
+              <span>${item.isEnabled !== false ? '⏸️ Pausar' : '▶️ Activar'}</span>
+            </button>
+          ` : '<div></div>'}
+          <button class="btn btn-danger btn-user-delete-ad" data-id="${item.id}" data-title="${item.title}" style="padding:5px 10px;font-size:0.75rem;">
+            <span>🗑️</span> Eliminar
+          </button>
+        </div>
+      `;
+      userPortalAdsContainer.appendChild(card);
+    });
+
+    // Eventos de pausar y eliminar en portal de usuario
+    userPortalAdsContainer.querySelectorAll('.btn-user-toggle-pause').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const itemId = e.currentTarget.getAttribute('data-id');
+        try {
+          const res = await apiFetch('/api/v1/devices/toggle-block-ad', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ itemId, targetTvId: myDevice.id })
+          });
+          const resData = await res.json();
+          if (resData.success) {
+            showToast(`Estado de anuncio actualizado.`, '#10B981');
+            await loadDevicesFromBackend();
+            renderUserPortal();
+          }
+        } catch (err) {
+          showToast('⚠️ Error al actualizar anuncio.', '#EF4444');
+        }
+      });
+    });
+
+    userPortalAdsContainer.querySelectorAll('.btn-user-delete-ad').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const itemId = e.currentTarget.getAttribute('data-id');
+        const title = e.currentTarget.getAttribute('data-title');
+        if (confirm(`¿Estás seguro de que deseas eliminar tu publicidad "${title}"?`)) {
+          try {
+            const res = await apiFetch('/api/v1/devices/delete-ad', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ itemId, targetTvId: myDevice.id })
+            });
+            const resData = await res.json();
+            if (resData.success) {
+              showToast(`🗑️ "${title}" eliminado.`, '#EF4444');
+              await loadDevicesFromBackend();
+              renderUserPortal();
+            }
+          } catch (err) {
+            showToast('⚠️ Error al eliminar anuncio.', '#EF4444');
+          }
+        }
+      });
+    });
+  }
+
+  if (btnUserOpenUpload && mediaFileInput) {
+    btnUserOpenUpload.addEventListener('click', () => mediaFileInput.click());
+  }
+
+  if (btnRefreshUserAds) {
+    btnRefreshUserAds.addEventListener('click', async () => {
+      await loadDevicesFromBackend();
+      renderUserPortal();
+      showToast('🔄 Publicidades actualizadas.', '#10B981');
     });
   }
 
@@ -1980,7 +2446,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (window.location.hash) {
     handleHash();
   } else {
-    switchView('playlists');
+    switchView(currentUser && (currentUser.role === 'DEVICE_USER' || currentUser.role === 'CLIENT') ? 'user-portal' : 'devices');
   }
 
 });

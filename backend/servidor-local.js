@@ -887,6 +887,28 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // 1.0 LISTA PÚBLICA DE PANTALLAS (Para selector de anunciantes en login / portal)
+  if (req.method === 'GET' && (url === '/api/v1/public/screens' || url === '/api/v1/devices/public-list')) {
+    const screens = (state.devices || [])
+      .filter(d => d.isPaired || d.hasBeenPaired)
+      .map(d => {
+        const approvedCount = (d.items || []).filter(x => x.isEnabled !== false && x.approvalStatus === 'APPROVED').length;
+        return {
+          id: d.id,
+          name: d.name,
+          location: d.location,
+          tariff: d.tariff || '$50.00 / mes',
+          maxSlots: parseInt(d.maxSlots, 10) || 10,
+          activeAdsCount: approvedCount,
+          hasPassword: Boolean(d.tvPasswordHash),
+          tvUser: d.tvUser || ''
+        };
+      });
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: true, screens }));
+    return;
+  }
+
   // ================= 1.1 AUTENTICACIÓN MULTI-ROL (ADMINISTRADOR Y CLIENTES ANUNCIANTES) =================
   if (req.method === 'POST' && (url === '/api/v1/admin/login' || url === '/api/v1/auth/login')) {
     const loginLimit = isRateLimited(`login_${clientIp}`, 10, 15 * 60 * 1000); // Máx 10 intentos en 15 min
@@ -931,13 +953,23 @@ const server = http.createServer((req, res) => {
       }
 
       // 2. Probar credenciales asignadas a cada Televisor vinculado (DEVICE_USER)
-      const matchedDevice = (state.devices || []).find(d => 
-        (d.isPaired || d.hasBeenPaired) &&
-        d.tvUser &&
-        d.tvUser.toLowerCase() === username.toLowerCase() &&
-        d.tvPasswordHash &&
-        verifyPassword(password, d.tvPasswordHash)
-      );
+      let matchedDevice = null;
+      if (data.deviceId) {
+        matchedDevice = (state.devices || []).find(d => 
+          (d.isPaired || d.hasBeenPaired) &&
+          d.id === data.deviceId &&
+          ((d.tvPasswordHash && verifyPassword(password, d.tvPasswordHash)) || (!d.tvPasswordHash && (password === '' || password === 'admin')))
+        );
+      }
+      if (!matchedDevice && username) {
+        matchedDevice = (state.devices || []).find(d => 
+          (d.isPaired || d.hasBeenPaired) &&
+          d.tvUser &&
+          d.tvUser.toLowerCase() === username.toLowerCase() &&
+          d.tvPasswordHash &&
+          verifyPassword(password, d.tvPasswordHash)
+        );
+      }
 
       if (matchedDevice) {
         const deviceUser = {
@@ -1935,6 +1967,38 @@ const server = http.createServer((req, res) => {
         manifestVersion: state.manifestVersion
       }));
     });
+    return;
+  }
+
+  // 13.0 BANDEJA DE APROBACIONES PENDIENTES (SOLO ADMIN)
+  if (req.method === 'GET' && url === '/api/v1/admin/pending-approvals') {
+    if (!checkAdminAuth(req)) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: "No autorizado. Solo administrador." }));
+      return;
+    }
+
+    const pendingAds = [];
+    const seenItemIds = new Set();
+    (state.devices || []).forEach(dev => {
+      if (Array.isArray(dev.items)) {
+        dev.items.forEach(it => {
+          if (it.approvalStatus === 'PENDING' && !seenItemIds.has(it.id)) {
+            seenItemIds.add(it.id);
+            pendingAds.push({
+              ...it,
+              deviceId: dev.id,
+              deviceName: dev.name,
+              deviceLocation: dev.location,
+              deviceTariff: dev.tariff || '$50.00 / mes'
+            });
+          }
+        });
+      }
+    });
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: true, pendingAds }));
     return;
   }
 
