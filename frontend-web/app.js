@@ -682,16 +682,29 @@ document.addEventListener('DOMContentLoaded', () => {
         const item = device.items[idx];
         const newDur = parseInt(e.currentTarget.getAttribute('data-sec')) || 15;
         if (item) {
+          // Actualización visual inmediata de la píldora activa
+          parentPills.querySelectorAll('.btn-time-pill').forEach(b => b.classList.remove('active'));
+          e.currentTarget.classList.add('active');
+
           item.durationSeconds = newDur;
           saveDevices();
+          updatePlaylistStats(device);
+
+          // Si este televisor está seleccionado en la vista, actualizar el simulador en vivo
+          if (currentSelectedTvId === device.id) {
+            updateSimulator(device.items);
+          }
+
           try {
             await apiFetch('/api/v1/devices/update-ad-duration', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ itemId: item.id, durationSeconds: newDur })
+              body: JSON.stringify({ itemId: item.id, durationSeconds: newDur, targetTvId: device.id })
             });
             showToast(`⏱️ "${item.title}": tiempo cambiado a ${newDur}s.`, '#10B981');
-          } catch (err) {}
+          } catch (err) {
+            showToast('⚠️ No se pudo guardar la duración en el servidor.', '#EF4444');
+          }
         }
       });
     });
@@ -866,23 +879,34 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     updateSimPill(currentSimIndex, items);
+    scheduleNextSimSlide(items);
+  }
+
+  function scheduleNextSimSlide(items) {
+    if (simulatorTimer) clearTimeout(simulatorTimer);
+    if (!items || items.length <= 1) return;
+
+    const currentItem = items[currentSimIndex];
+    const itemSec = Math.max(1, parseInt(currentItem?.durationSeconds, 10) || 15);
+
+    simulatorTimer = setTimeout(() => {
+      showSimSlide(currentSimIndex + 1, items);
+    }, itemSec * 1000);
   }
 
   function updateSimPill(idx, items, totalCount = items.length) {
     if (!simTimerPill) return;
     const item = items[idx];
     if (item) {
-      simTimerPill.innerHTML = `Carrusel: <strong>${idx + 1} / ${items.length} activos</strong> (${totalCount} en lista) • ${item.durationSeconds}s`;
+      const dur = Math.max(1, parseInt(item.durationSeconds, 10) || 15);
+      simTimerPill.innerHTML = `Carrusel: <strong>${idx + 1} / ${items.length} activos</strong> (${totalCount} en lista) • ⏱️ <strong>${dur}s</strong>`;
     }
   }
 
   function startSimLoop(items) {
-    if (simulatorTimer) clearInterval(simulatorTimer);
-    if (items.length <= 1) return;
-
-    simulatorTimer = setInterval(() => {
-      showSimSlide(currentSimIndex + 1, items);
-    }, 4500);
+    if (simulatorTimer) clearTimeout(simulatorTimer);
+    if (!items || items.length <= 1) return;
+    scheduleNextSimSlide(items);
   }
 
   // ================= 8. SISTEMA DE SUBIDA MULTIMEDIA (INDIVIDUAL O CARRUSEL MULTI-ARCHIVO) =================
@@ -1525,6 +1549,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       saveDevices();
       closeDurationModal();
+      renderTvSelector();
 
       try {
         await apiFetch('/api/v1/devices/update-ad-duration', {
@@ -1533,7 +1558,8 @@ document.addEventListener('DOMContentLoaded', () => {
           body: JSON.stringify({
             itemId: currentEditingItem.id,
             durationSeconds: newDur,
-            applyToAll: applyToAll
+            applyToAll: applyToAll,
+            targetTvId: currentDevice ? currentDevice.id : null
           })
         });
 
@@ -1562,12 +1588,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         currentDevice.items.forEach(it => { it.durationSeconds = sec; });
         saveDevices();
+        renderTvSelector();
 
         try {
           await apiFetch('/api/v1/devices/update-ad-duration', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ applyToAll: true, durationSeconds: sec })
+            body: JSON.stringify({
+              applyToAll: true,
+              durationSeconds: sec,
+              targetTvId: currentDevice.id
+            })
           });
           showToast(`⚡ Todos los anuncios ajustados a ${sec}s para "${currentDevice.name}".`, '#38BDF8');
         } catch (err) {

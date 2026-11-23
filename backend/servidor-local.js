@@ -1425,22 +1425,29 @@ const server = http.createServer((req, res) => {
         if (applyToAll === true) {
           list.forEach(it => { it.durationSeconds = parsedSeconds; });
         } else if (itemId) {
-          const it = list.find(x => x.id === itemId);
+          const it = list.find(x => x.id === itemId || x.assetId === itemId);
           if (it) it.durationSeconds = parsedSeconds;
         }
       };
 
       if (targetTvId) {
         const dev = state.devices.find(d => d.id === targetTvId);
-        if (dev && Array.isArray(dev.items)) updateList(dev.items);
+        if (dev && Array.isArray(dev.items)) {
+          updateList(dev.items);
+        } else {
+          state.devices.forEach(d => { if (Array.isArray(d.items)) updateList(d.items); });
+        }
       } else {
         state.devices.forEach(d => { if (Array.isArray(d.items)) updateList(d.items); });
-        updateList(state.customItems);
       }
+
+      // Sincronizar catálogo global también si coincide el ítem o aplica a todos
+      updateList(state.customItems);
 
       state.manifestVersion = "v" + Date.now();
       saveState();
       broadcastPlaylistUpdated(state.manifestVersion, `Duración actualizada a ${parsedSeconds}s`);
+      console.log(`[DURATION UPDATE] Item ${itemId || 'TODOS'} -> ${parsedSeconds}s (Target: ${targetTvId || 'GLOBAL'}). Versión: ${state.manifestVersion}`);
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
@@ -1578,7 +1585,7 @@ const server = http.createServer((req, res) => {
               itemId: item.id,
               assetId: item.assetId,
               orderIndex: idx + 1,
-              displayDurationSec: item.durationSeconds,
+              displayDurationSec: Math.max(1, parseInt(item.durationSeconds, 10) || 15),
               transition: "CUT",
               fitMode: "FIT_CENTER"
             }))

@@ -180,6 +180,7 @@ class PlayerViewModel(
                 // Ensure video player is stopped during image presentation
                 playerEngine.stop()
                 val durationSec = if (item.displayDurationSec > 0) item.displayDurationSec else DEFAULT_IMAGE_DURATION_SEC
+                SignageLogger.i(TAG, "Displaying image ${item.id} for $durationSec seconds")
 
                 imageTimerJob = viewModelScope.launch {
                     delay(durationSec * 1000)
@@ -250,12 +251,42 @@ class PlayerViewModel(
 
                 val currentReadyIds = readyItems.map { "${it.id}_${it.asset?.id}" }
                 val newReadyIds = newReady.map { "${it.id}_${it.asset?.id}" }
-                if (newReady.isNotEmpty() && (newReadyIds != currentReadyIds || _uiState.value is PlayerUiState.Standby)) {
-                    SignageLogger.i(TAG, "Playlist changed detected! Switching to new assets immediately: $newReadyIds")
-                    currentPlaylist = newPlaylist
-                    readyItems = newReady
-                    currentIndex = 0
-                    playCurrentItem()
+                val currentSignatures = readyItems.map { "${it.id}_${it.asset?.id}_${it.displayDurationSec}" }
+                val newSignatures = newReady.map { "${it.id}_${it.asset?.id}_${it.displayDurationSec}" }
+
+                if (newReady.isNotEmpty()) {
+                    if (newReadyIds != currentReadyIds || _uiState.value is PlayerUiState.Standby) {
+                        SignageLogger.i(TAG, "Playlist change detected! Switching to new assets: $newReadyIds")
+                        currentPlaylist = newPlaylist
+                        readyItems = newReady
+                        currentIndex = 0
+                        playCurrentItem()
+                    } else if (newSignatures != currentSignatures) {
+                        SignageLogger.i(TAG, "Ad duration change detected! Updating playlist in place: $newSignatures")
+                        currentPlaylist = newPlaylist
+                        readyItems = newReady
+
+                        // Si actualmente se está proyectando una imagen, ajustar dinámicamente el tiempo restante
+                        val currentPlayingItem = readyItems.getOrNull(currentIndex)
+                        if (currentPlayingItem?.asset?.mediaType == MediaType.IMAGE) {
+                            val durationSec = if (currentPlayingItem.displayDurationSec > 0) currentPlayingItem.displayDurationSec else DEFAULT_IMAGE_DURATION_SEC
+                            val elapsedMs = System.currentTimeMillis() - currentItemStartTime
+                            val totalMs = durationSec * 1000L
+                            if (elapsedMs >= totalMs) {
+                                SignageLogger.i(TAG, "New duration ($durationSec s) already elapsed ($elapsedMs ms). Advancing immediately.")
+                                advanceToNextItem()
+                            } else {
+                                val remainingMs = totalMs - elapsedMs
+                                SignageLogger.i(TAG, "Adjusting image timer: new duration=${durationSec}s, remaining=${remainingMs}ms")
+                                imageTimerJob?.cancel()
+                                imageTimerJob = viewModelScope.launch {
+                                    delay(remainingMs)
+                                    recordProofOfPlay(currentPlayingItem, completedNormally = true)
+                                    advanceToNextItem()
+                                }
+                            }
+                        }
+                    }
                 } else if (newReady.isEmpty() && _uiState.value !is PlayerUiState.Standby) {
                     currentPlaylist = null
                     readyItems = emptyList()
