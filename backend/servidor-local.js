@@ -888,18 +888,23 @@ const server = http.createServer((req, res) => {
   }
 
   // 1.0 LISTA PÚBLICA DE PANTALLAS (Para selector de anunciantes en login / portal)
-  if (req.method === 'GET' && (url === '/api/v1/public/screens' || url === '/api/v1/devices/public-list')) {
+  if (req.method === 'GET' && (url === '/api/v1/public/screens' || url === '/api/v1/devices/public-list' || url === '/api/v1/devices/catalog')) {
     const screens = (state.devices || [])
       .filter(d => d.isPaired || d.hasBeenPaired)
       .map(d => {
         const approvedCount = (d.items || []).filter(x => x.isEnabled !== false && x.approvalStatus === 'APPROVED').length;
+        const maxSlots = parseInt(d.maxSlots, 10) || 10;
         return {
           id: d.id,
           name: d.name,
-          location: d.location,
+          location: d.location || 'Ubicación General',
           tariff: d.tariff || '$50.00 / mes',
-          maxSlots: parseInt(d.maxSlots, 10) || 10,
+          maxSlots: maxSlots,
           activeAdsCount: approvedCount,
+          availableSlots: Math.max(0, maxSlots - approvedCount),
+          resolution: d.resolution || '1920x1080',
+          model: d.model || 'Android TV',
+          status: d.status || 'ONLINE',
           hasPassword: Boolean(d.tvPasswordHash),
           tvUser: d.tvUser || ''
         };
@@ -1050,6 +1055,191 @@ const server = http.createServer((req, res) => {
       'Set-Cookie': '0media_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0'
     });
     res.end(JSON.stringify({ success: true, message: "Sesión cerrada correctamente." }));
+    return;
+  }
+
+  // ================= 1.1.1 REGISTRO PÚBLICO DE USUARIOS ANUNCIANTES (WEB SIN APK) =================
+  if (req.method === 'POST' && (url === '/api/v1/auth/register' || url === '/api/v1/users/register')) {
+    const regLimit = isRateLimited(`reg_${clientIp}`, 15, 15 * 60 * 1000);
+    if (regLimit.limited) {
+      res.writeHead(429, { 'Content-Type': 'application/json', 'Retry-After': String(regLimit.retryAfter) });
+      res.end(JSON.stringify({
+        success: false,
+        error: `Demasiados registros desde esta conexión. Por favor espere ${regLimit.retryAfter} segundos.`
+      }));
+      return;
+    }
+
+    parseBody(data => {
+      const username = (data.username || '').toLowerCase().trim();
+      const password = data.password || '';
+      const name = (data.name || '').trim();
+      const company = (data.company || name || username).trim();
+      const phone = (data.phone || '').trim();
+      const email = (data.email || '').trim();
+      const selectedDeviceId = (data.selectedDeviceId || data.deviceId || '').trim();
+
+      if (!username || username.length < 3) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: "El nombre de usuario debe tener al menos 3 caracteres." }));
+        return;
+      }
+      if (!/^[a-zA-Z0-9_.-]+$/.test(username)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: "El nombre de usuario solo puede contener letras, números, puntos y guiones." }));
+        return;
+      }
+      if (!password || password.length < 4) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: "La contraseña debe tener al menos 4 caracteres." }));
+        return;
+      }
+
+      if (username === ADMIN_USER.toLowerCase() || (state.users || []).some(u => u.username.toLowerCase() === username)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: `El usuario "${username}" ya está registrado. Por favor inicia sesión o elige otro nombre.` }));
+        return;
+      }
+
+      // Asignar dispositivo inicial si se seleccionó uno válido
+      let initialDevices = [];
+      if (selectedDeviceId) {
+        const found = (state.devices || []).find(d => d.id === selectedDeviceId && (d.isPaired || d.hasBeenPaired));
+        if (found) {
+          initialDevices.push(found.id);
+        }
+      }
+
+      const newUser = {
+        id: 'usr_' + Date.now().toString(36) + '_' + crypto.randomBytes(3).toString('hex'),
+        username: username,
+        passwordHash: hashPassword(password),
+        name: name || username,
+        company: company,
+        email: email,
+        phone: phone,
+        role: 'CLIENT',
+        assignedDevices: initialDevices,
+        isActive: true,
+        createdAt: Date.now()
+      };
+
+      if (!Array.isArray(state.users)) state.users = [];
+      state.users.push(newUser);
+      saveState();
+
+      const sessionUser = {
+        id: newUser.id,
+        username: newUser.username,
+        name: newUser.name,
+        company: newUser.company,
+        email: newUser.email,
+        phone: newUser.phone,
+        role: 'CLIENT',
+        assignedDevices: newUser.assignedDevices
+      };
+
+      const { token, expiresAt } = createSession(sessionUser);
+      console.log(`[USER REGISTER] Nuevo anunciante registrado: "${newUser.company}" (@${newUser.username}), vinculado a: ${initialDevices.length > 0 ? initialDevices.join(', ') : 'Ninguno (catálogo pendiente)'}.`);
+
+      res.writeHead(201, {
+        'Content-Type': 'application/json',
+        'Set-Cookie': `0media_session=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=604800`
+      });
+      res.end(JSON.stringify({
+        success: true,
+        message: `¡Bienvenido a 0Media! Tu cuenta para "${newUser.company}" fue creada exitosamente.`,
+        token: token,
+        user: sessionUser,
+        expiresAt: expiresAt
+      }));
+    });
+    return;
+  }
+
+  // ================= 1.1.2 VINCULAR PANTALLA DISPONIBLE A LA CUENTA DEL USUARIO ANUNCIANTE =================
+  if (req.method === 'POST' && (url === '/api/v1/users/link-device' || url === '/api/v1/devices/link-user')) {
+    const authUser = getAuthUser(req);
+    if (!authUser) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: "Debes iniciar sesión para vincularte a una pantalla." }));
+      return;
+    }
+
+    parseBody(data => {
+      const deviceId = (data.deviceId || '').trim();
+      if (!deviceId) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: "Identificador de dispositivo no proporcionado." }));
+        return;
+      }
+
+      const targetDevice = (state.devices || []).find(d => d.id === deviceId && (d.isPaired || d.hasBeenPaired));
+      if (!targetDevice) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: "El televisor seleccionado no existe o no está activo." }));
+        return;
+      }
+
+      if (authUser.role === 'ADMIN') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          success: true,
+          message: "Como Administrador tienes acceso global a todas las pantallas.",
+          deviceId: targetDevice.id,
+          device: {
+            id: targetDevice.id,
+            name: targetDevice.name,
+            location: targetDevice.location,
+            tariff: targetDevice.tariff || '$50.00 / mes'
+          }
+        }));
+        return;
+      }
+
+      // Buscar el usuario en state.users
+      const user = (state.users || []).find(u => u.id === authUser.id || u.username.toLowerCase() === authUser.username.toLowerCase());
+      if (!user) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: "Usuario anunciante no encontrado." }));
+        return;
+      }
+
+      if (!Array.isArray(user.assignedDevices)) {
+        user.assignedDevices = [];
+      }
+
+      if (!user.assignedDevices.includes(targetDevice.id)) {
+        user.assignedDevices.push(targetDevice.id);
+      }
+
+      // Actualizar sesión activa
+      if (Array.isArray(authUser.assignedDevices)) {
+        if (!authUser.assignedDevices.includes(targetDevice.id)) {
+          authUser.assignedDevices.push(targetDevice.id);
+        }
+      } else {
+        authUser.assignedDevices = [targetDevice.id];
+      }
+
+      saveState();
+
+      console.log(`[USER LINK DEVICE] Usuario "${user.username}" (${user.company}) se vinculó al televisor "${targetDevice.name}" (${targetDevice.id}).`);
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: true,
+        message: `¡Te has vinculado exitosamente a "${targetDevice.name}" (${targetDevice.location})!`,
+        assignedDevices: user.assignedDevices,
+        device: {
+          id: targetDevice.id,
+          name: targetDevice.name,
+          location: targetDevice.location,
+          tariff: targetDevice.tariff || '$50.00 / mes',
+          maxSlots: parseInt(targetDevice.maxSlots, 10) || 10
+        }
+      }));
+    });
     return;
   }
 
@@ -1697,6 +1887,22 @@ const server = http.createServer((req, res) => {
         let effectiveTargetTvId = targetTvId;
         if (authUser.role === 'DEVICE_USER') {
           effectiveTargetTvId = authUser.assignedDeviceId;
+        } else if (authUser.role === 'CLIENT') {
+          const allowed = authUser.assignedDevices || [];
+          if (!effectiveTargetTvId || effectiveTargetTvId === 'ALL' || effectiveTargetTvId === 'all') {
+            if (allowed.length > 0 && allowed[0] !== '*') {
+              effectiveTargetTvId = allowed[0];
+            } else if (allowed.length === 0) {
+              res.writeHead(403, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ success: false, error: "Aún no te has vinculado a ningún televisor. Elige una pantalla en tu panel para subir publicidad." }));
+              return;
+            }
+          }
+          if (Array.isArray(allowed) && !allowed.includes('*') && !allowed.includes(effectiveTargetTvId)) {
+            res.writeHead(403, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, error: "No tienes permiso para publicar en este televisor. Primero debes vincularlo a tu cuenta." }));
+            return;
+          }
         }
 
         const isClient = authUser.role === 'CLIENT';

@@ -148,25 +148,52 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let cachedWorkingApiBase = null;
 
+  let cachedPublicScreens = [];
+
   async function loadPublicScreensForLogin() {
     const loginTvSelect = document.getElementById('login-tv-select');
-    if (!loginTvSelect) return;
+    const regTvSelect = document.getElementById('reg-tv-select');
     try {
       const res = await fetch('/api/v1/public/screens');
       const data = await res.json();
       if (data.success && Array.isArray(data.screens)) {
-        loginTvSelect.innerHTML = '';
-        if (data.screens.length === 0) {
-          loginTvSelect.innerHTML = '<option value="">(No hay pantallas vinculadas disponibles)</option>';
-          return;
+        cachedPublicScreens = data.screens;
+
+        if (loginTvSelect) {
+          loginTvSelect.innerHTML = '';
+          if (data.screens.length === 0) {
+            loginTvSelect.innerHTML = '<option value="">(No hay pantallas vinculadas disponibles)</option>';
+          } else {
+            loginTvSelect.innerHTML = '<option value="">-- Selecciona el Televisor donde anunciarás --</option>';
+            data.screens.forEach(s => {
+              const opt = document.createElement('option');
+              opt.value = s.id;
+              opt.textContent = `📺 ${s.name} (${s.location}) — Tarifa: ${s.tariff} [Cupos: ${s.activeAdsCount}/${s.maxSlots}]`;
+              loginTvSelect.appendChild(opt);
+            });
+          }
         }
-        loginTvSelect.innerHTML = '<option value="">-- Selecciona el Televisor donde anunciarás --</option>';
-        data.screens.forEach(s => {
-          const opt = document.createElement('option');
-          opt.value = s.id;
-          opt.textContent = `📺 ${s.name} (${s.location}) — Tarifa: ${s.tariff} [Cupos: ${s.activeAdsCount}/${s.maxSlots}]`;
-          loginTvSelect.appendChild(opt);
-        });
+
+        if (regTvSelect) {
+          regTvSelect.innerHTML = '';
+          if (data.screens.length === 0) {
+            regTvSelect.innerHTML = '<option value="">(Aún no hay pantallas en la red, podrás vincularte luego)</option>';
+          } else {
+            regTvSelect.innerHTML = '<option value="">-- Selecciona una pantalla para vincularte (opcional) --</option>';
+            data.screens.forEach(s => {
+              const opt = document.createElement('option');
+              opt.value = s.id;
+              opt.setAttribute('data-location', s.location || 'Ubicación General');
+              opt.setAttribute('data-tariff', s.tariff || '$50.00 / mes');
+              opt.setAttribute('data-available', s.availableSlots !== undefined ? s.availableSlots : 10);
+              opt.setAttribute('data-max', s.maxSlots || 10);
+              opt.setAttribute('data-resolution', s.resolution || '1920x1080');
+              opt.setAttribute('data-model', s.model || 'Android TV');
+              opt.textContent = `📺 ${s.name} — ${s.location} (${s.tariff})`;
+              regTvSelect.appendChild(opt);
+            });
+          }
+        }
       }
     } catch (e) {
       console.warn('No se pudo cargar la lista pública de pantallas:', e);
@@ -1884,19 +1911,48 @@ document.addEventListener('DOMContentLoaded', () => {
   // ================= GESTIÓN DE SESIÓN Y LOGIN CON 2 OPCIONES: ADMIN Y USUARIO =================
   const tabLoginAdmin = document.getElementById('tab-login-admin');
   const tabLoginUser = document.getElementById('tab-login-user');
+  const sectionUserAuth = document.getElementById('section-user-auth');
   const formAdminLogin = document.getElementById('form-admin-login');
   const formUserLogin = document.getElementById('form-user-login');
+  const formUserRegister = document.getElementById('form-user-register');
+  const subtabUserLogin = document.getElementById('subtab-user-login');
+  const subtabUserRegister = document.getElementById('subtab-user-register');
+  const btnSwitchToRegister = document.getElementById('btn-switch-to-register');
+  const btnSwitchToLogin = document.getElementById('btn-switch-to-login');
   const loginErrorAlert = document.getElementById('login-error-alert');
-  const btnToggleUserLoginType = document.getElementById('btn-toggle-user-login-type');
-  const loginUserCustomWrap = document.getElementById('login-user-custom-wrap');
+  const btnToggleTvDirect = document.getElementById('btn-toggle-tv-direct-login');
+  const loginTvSelectWrap = document.getElementById('login-tv-select-wrap');
+  const regTvSelect = document.getElementById('reg-tv-select');
+  const regTvSpecsPreview = document.getElementById('reg-tv-specs-preview');
+  const regSpecLocation = document.getElementById('reg-spec-location');
+  const regSpecTariff = document.getElementById('reg-spec-tariff');
+  const regSpecSlots = document.getElementById('reg-spec-slots');
+  const regSpecResolution = document.getElementById('reg-spec-resolution');
 
-  // Alternar entre las 2 opciones del modal
+  function showUserLoginForm() {
+    if (subtabUserLogin) subtabUserLogin.classList.add('active');
+    if (subtabUserRegister) subtabUserRegister.classList.remove('active');
+    if (formUserLogin) formUserLogin.style.display = 'block';
+    if (formUserRegister) formUserRegister.style.display = 'none';
+    if (loginErrorAlert) loginErrorAlert.style.display = 'none';
+  }
+
+  function showUserRegisterForm() {
+    if (subtabUserRegister) subtabUserRegister.classList.add('active');
+    if (subtabUserLogin) subtabUserLogin.classList.remove('active');
+    if (formUserRegister) formUserRegister.style.display = 'block';
+    if (formUserLogin) formUserLogin.style.display = 'none';
+    if (loginErrorAlert) loginErrorAlert.style.display = 'none';
+    loadPublicScreensForLogin();
+  }
+
+  // Alternar entre pestañas principales de Administrador y Usuario
   if (tabLoginAdmin && tabLoginUser) {
     tabLoginAdmin.addEventListener('click', () => {
       tabLoginAdmin.classList.add('active');
       tabLoginUser.classList.remove('active');
       if (formAdminLogin) formAdminLogin.style.display = 'block';
-      if (formUserLogin) formUserLogin.style.display = 'none';
+      if (sectionUserAuth) sectionUserAuth.style.display = 'none';
       if (loginErrorAlert) loginErrorAlert.style.display = 'none';
     });
 
@@ -1904,19 +1960,38 @@ document.addEventListener('DOMContentLoaded', () => {
       tabLoginUser.classList.add('active');
       tabLoginAdmin.classList.remove('active');
       if (formAdminLogin) formAdminLogin.style.display = 'none';
-      if (formUserLogin) formUserLogin.style.display = 'block';
-      if (loginErrorAlert) loginErrorAlert.style.display = 'none';
+      if (sectionUserAuth) sectionUserAuth.style.display = 'flex';
+      showUserLoginForm();
       loadPublicScreensForLogin();
     });
   }
 
-  if (btnToggleUserLoginType && loginUserCustomWrap) {
-    btnToggleUserLoginType.addEventListener('click', () => {
-      const isHidden = loginUserCustomWrap.style.display === 'none';
-      loginUserCustomWrap.style.display = isHidden ? 'flex' : 'none';
-      btnToggleUserLoginType.textContent = isHidden ?
-        '¿Elegir televisor de la lista en vez de escribir usuario?' :
-        '¿Ingresar por nombre de usuario en vez de lista?';
+  if (subtabUserLogin) subtabUserLogin.addEventListener('click', showUserLoginForm);
+  if (subtabUserRegister) subtabUserRegister.addEventListener('click', showUserRegisterForm);
+  if (btnSwitchToRegister) btnSwitchToRegister.addEventListener('click', showUserRegisterForm);
+  if (btnSwitchToLogin) btnSwitchToLogin.addEventListener('click', showUserLoginForm);
+
+  if (btnToggleTvDirect && loginTvSelectWrap) {
+    btnToggleTvDirect.addEventListener('click', () => {
+      const isHidden = loginTvSelectWrap.style.display === 'none';
+      loginTvSelectWrap.style.display = isHidden ? 'flex' : 'none';
+      btnToggleTvDirect.textContent = isHidden ? 'Ocultar selector de TV' : 'Acceder directo por TV';
+    });
+  }
+
+  // Actualizar previsualización de especificaciones al elegir pantalla en el registro
+  if (regTvSelect) {
+    regTvSelect.addEventListener('change', () => {
+      const selected = regTvSelect.options[regTvSelect.selectedIndex];
+      if (selected && selected.value) {
+        if (regSpecLocation) regSpecLocation.textContent = selected.getAttribute('data-location') || 'Ubicación General';
+        if (regSpecTariff) regSpecTariff.textContent = selected.getAttribute('data-tariff') || '$50.00 / mes';
+        if (regSpecSlots) regSpecSlots.textContent = `${selected.getAttribute('data-available') || '10'} cupos disponibles de ${selected.getAttribute('data-max') || '10'}`;
+        if (regSpecResolution) regSpecResolution.textContent = `${selected.getAttribute('data-resolution') || '1920x1080'} • ${selected.getAttribute('data-model') || 'Android TV'}`;
+        if (regTvSpecsPreview) regTvSpecsPreview.style.display = 'flex';
+      } else {
+        if (regTvSpecsPreview) regTvSpecsPreview.style.display = 'none';
+      }
     });
   }
 
@@ -1976,22 +2051,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 2. Enviar formulario de Usuario Anunciante (Querer poner publicidad en un TV)
+  // 2. Enviar formulario de Inicio de Sesión de Usuario Anunciante
   if (formUserLogin) {
     formUserLogin.addEventListener('submit', async (e) => {
       e.preventDefault();
+      const clientUserInput = document.getElementById('login-client-username');
+      const clientPassInput = document.getElementById('login-client-password');
       const selectTv = document.getElementById('login-tv-select');
-      const passwordInput = document.getElementById('login-tv-password');
-      const customUserInput = document.getElementById('login-tv-username');
       const submitBtn = document.getElementById('btn-submit-user-login');
 
-      const deviceId = selectTv ? selectTv.value : '';
-      const password = passwordInput ? passwordInput.value : '';
-      const username = customUserInput ? customUserInput.value.trim() : '';
+      const username = clientUserInput ? clientUserInput.value.trim() : '';
+      const password = clientPassInput ? clientPassInput.value : '';
+      const deviceId = (selectTv && loginTvSelectWrap && loginTvSelectWrap.style.display !== 'none') ? selectTv.value : '';
 
-      if (!deviceId && !username) {
+      if (!username) {
         if (loginErrorAlert) {
-          loginErrorAlert.innerText = 'Por favor selecciona un televisor o escribe tu usuario asignado.';
+          loginErrorAlert.innerText = 'Por favor ingresa tu nombre de usuario o correo.';
           loginErrorAlert.style.display = 'block';
         }
         return;
@@ -2000,14 +2075,14 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         if (submitBtn) {
           submitBtn.disabled = true;
-          submitBtn.innerHTML = '<span>⏳</span> Accediendo al Televisor...';
+          submitBtn.innerHTML = '<span>⏳</span> Iniciando sesión...';
         }
         if (loginErrorAlert) loginErrorAlert.style.display = 'none';
 
-        const res = await apiFetch('/api/v1/admin/login', {
+        const res = await apiFetch('/api/v1/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ deviceId, username, password })
+          body: JSON.stringify({ username, password, deviceId })
         });
 
         const data = await res.json();
@@ -2017,14 +2092,14 @@ document.addEventListener('DOMContentLoaded', () => {
             currentUser = data.user;
             applyUserRoleUI();
           }
-          if (passwordInput) passwordInput.value = '';
+          if (clientPassInput) clientPassInput.value = '';
           closeLoginModal();
-          showToast(`📺 ¡Bienvenido a ${currentUser.deviceName || 'tu Pantalla'}!`, '#10B981');
+          showToast(`🎬 ¡Bienvenido ${currentUser.company || currentUser.name || currentUser.username}!`, '#10B981');
           await loadDevicesFromBackend();
           switchView('user-portal');
         } else {
           if (loginErrorAlert) {
-            loginErrorAlert.innerText = data.error || 'Clave de acceso incorrecta para este televisor.';
+            loginErrorAlert.innerText = data.error || 'Usuario o contraseña incorrectos.';
             loginErrorAlert.style.display = 'block';
           }
         }
@@ -2036,7 +2111,85 @@ document.addEventListener('DOMContentLoaded', () => {
       } finally {
         if (submitBtn) {
           submitBtn.disabled = false;
-          submitBtn.innerHTML = '<span>🎬</span> Entrar al Panel de Usuario (Poner Publicidad)';
+          submitBtn.innerHTML = '<span>🎬</span> Iniciar Sesión en Mi Panel';
+        }
+      }
+    });
+  }
+
+  // 3. Enviar formulario de Registro de Nuevo Anunciante (Sin APK)
+  if (formUserRegister) {
+    formUserRegister.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const company = (document.getElementById('reg-company')?.value || '').trim();
+      const phone = (document.getElementById('reg-phone')?.value || '').trim();
+      const username = (document.getElementById('reg-username')?.value || '').trim();
+      const password = document.getElementById('reg-password')?.value || '';
+      const selectedDeviceId = document.getElementById('reg-tv-select')?.value || '';
+      const submitBtn = document.getElementById('btn-submit-user-register');
+
+      if (!username || username.length < 3) {
+        if (loginErrorAlert) {
+          loginErrorAlert.innerText = 'El nombre de usuario debe tener al menos 3 caracteres.';
+          loginErrorAlert.style.display = 'block';
+        }
+        return;
+      }
+      if (!password || password.length < 4) {
+        if (loginErrorAlert) {
+          loginErrorAlert.innerText = 'La contraseña debe tener al menos 4 caracteres.';
+          loginErrorAlert.style.display = 'block';
+        }
+        return;
+      }
+
+      try {
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<span>⏳</span> Creando tu cuenta...';
+        }
+        if (loginErrorAlert) loginErrorAlert.style.display = 'none';
+
+        const res = await apiFetch('/api/v1/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username,
+            password,
+            company,
+            phone,
+            name: company,
+            selectedDeviceId
+          })
+        });
+
+        const data = await res.json();
+        if (data.success && data.token) {
+          localStorage.setItem('0media_auth_token', data.token);
+          if (data.user) {
+            currentUser = data.user;
+            applyUserRoleUI();
+          }
+          closeLoginModal();
+          showToast(`🎉 ¡Bienvenido a 0Media, ${company}! Tu cuenta fue creada exitosamente.`, '#10B981');
+          await loadDevicesFromBackend();
+          if (selectedDeviceId) currentSelectedTvId = selectedDeviceId;
+          switchView('user-portal');
+        } else {
+          if (loginErrorAlert) {
+            loginErrorAlert.innerText = data.error || 'Error al crear la cuenta.';
+            loginErrorAlert.style.display = 'block';
+          }
+        }
+      } catch (err) {
+        if (loginErrorAlert) {
+          loginErrorAlert.innerText = err.message || 'Error de conexión con el servidor.';
+          loginErrorAlert.style.display = 'block';
+        }
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<span>🚀</span> Crear Cuenta y Empezar a Publicitar';
         }
       }
     });
@@ -2193,21 +2346,194 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // ================= CATÁLOGO DE DISPOSITIVOS DISPONIBLES (PARA USUARIOS) =================
+  const availableDevicesModal = document.getElementById('available-devices-modal');
+  const btnCloseAvailableDevicesModal = document.getElementById('btn-close-available-devices-modal');
+  const btnCancelAvailableDevices = document.getElementById('btn-cancel-available-devices');
+  const availableDevicesList = document.getElementById('available-devices-list');
+
+  function openAvailableDevicesCatalog() {
+    if (!availableDevicesModal) return;
+    availableDevicesModal.classList.add('open');
+    renderAvailableDevicesCatalog();
+  }
+
+  function closeAvailableDevicesModal() {
+    if (availableDevicesModal) availableDevicesModal.classList.remove('open');
+  }
+
+  if (btnCloseAvailableDevicesModal) btnCloseAvailableDevicesModal.addEventListener('click', closeAvailableDevicesModal);
+  if (btnCancelAvailableDevices) btnCancelAvailableDevices.addEventListener('click', closeAvailableDevicesModal);
+
+  async function renderAvailableDevicesCatalog() {
+    if (!availableDevicesList) return;
+    availableDevicesList.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:24px;">Cargando pantallas disponibles...</div>';
+
+    try {
+      const res = await fetch('/api/v1/public/screens');
+      const data = await res.json();
+      if (data.success && Array.isArray(data.screens)) {
+        cachedPublicScreens = data.screens;
+        if (data.screens.length === 0) {
+          availableDevicesList.innerHTML = `
+            <div style="text-align:center;padding:36px 16px;color:var(--text-muted);">
+              <div style="font-size:2.5rem;margin-bottom:8px;">📺</div>
+              <h4 style="color:#FFF;margin-bottom:6px;">No hay pantallas activas en este momento</h4>
+              <p style="font-size:0.85rem;">El Administrador aún no ha vinculado dispositivos físicos Android TV.</p>
+            </div>
+          `;
+          return;
+        }
+
+        availableDevicesList.innerHTML = '';
+        data.screens.forEach(s => {
+          const isLinked = devices.some(d => d.id === s.id) || (currentUser && Array.isArray(currentUser.assignedDevices) && currentUser.assignedDevices.includes(s.id));
+          const card = document.createElement('div');
+          card.className = 'available-device-card';
+          card.innerHTML = `
+            <div class="available-device-header">
+              <div>
+                <h4 class="available-device-title"><span>📺</span> ${s.name}</h4>
+                <div style="font-size:0.84rem;color:var(--text-muted);margin-top:2px;">📍 ${s.location}</div>
+              </div>
+              <span class="status-badge status-online">🟢 ${s.status === 'ONLINE' ? 'Transmitiendo en Vivo' : 'Activo'}</span>
+            </div>
+
+            <div class="available-device-specs-grid">
+              <div class="available-device-spec-item">
+                <span class="available-device-spec-label">💵 Tarifa Comercial</span>
+                <span class="available-device-spec-val" style="color:#6EE7B7;">${s.tariff || '$50.00 / mes'}</span>
+              </div>
+              <div class="available-device-spec-item">
+                <span class="available-device-spec-label">📊 Cupos Comerciales</span>
+                <span class="available-device-spec-val" style="color:#93C5FD;">${s.availableSlots} de ${s.maxSlots} disponibles</span>
+              </div>
+              <div class="available-device-spec-item">
+                <span class="available-device-spec-label">🖥️ Resolución</span>
+                <span class="available-device-spec-val">${s.resolution || '1920x1080 Full HD'}</span>
+              </div>
+              <div class="available-device-spec-item">
+                <span class="available-device-spec-label">📱 Tipo de Pantalla</span>
+                <span class="available-device-spec-val">${s.model || 'Android TV'}</span>
+              </div>
+            </div>
+
+            <div class="available-device-footer">
+              <span style="font-size:0.75rem;color:var(--text-muted);">Soporta: Fotos JPG/PNG, Videos MP4 y GIFs</span>
+              ${isLinked
+                ? `<span style="padding:6px 14px;background:rgba(16,185,129,0.15);color:#6EE7B7;border:1px solid rgba(16,185,129,0.3);border-radius:6px;font-size:0.82rem;font-weight:600;">✅ Ya vinculado a esta pantalla</span>`
+                : `<button class="btn btn-primary btn-link-device-action" data-id="${s.id}" data-name="${s.name}" style="padding:7px 16px;font-size:0.85rem;background:linear-gradient(135deg,#2563EB,#4F46E5);"><span>🔗</span> Vincularme a esta Pantalla</button>`
+              }
+            </div>
+          `;
+          availableDevicesList.appendChild(card);
+        });
+
+        // Eventos a botones de vincular
+        availableDevicesList.querySelectorAll('.btn-link-device-action').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            const deviceId = e.currentTarget.getAttribute('data-id');
+            const name = e.currentTarget.getAttribute('data-name');
+            try {
+              e.currentTarget.disabled = true;
+              e.currentTarget.innerHTML = '<span>⏳</span> Vinculando...';
+              const linkRes = await apiFetch('/api/v1/users/link-device', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ deviceId })
+              });
+              const linkData = await linkRes.json();
+              if (linkData.success) {
+                showToast(`🎉 ¡Te has vinculado exitosamente a "${name}"! Ya puedes subir tu publicidad comercial.`, '#10B981');
+                closeAvailableDevicesModal();
+                currentSelectedTvId = deviceId;
+                await loadDevicesFromBackend();
+                renderUserPortal();
+              } else {
+                showToast(`⚠️ ${linkData.error || 'No se pudo vincular la pantalla.'}`, '#EF4444');
+                e.currentTarget.disabled = false;
+                e.currentTarget.innerHTML = '<span>🔗</span> Vincularme a esta Pantalla';
+              }
+            } catch (err) {
+              showToast('⚠️ Error al comunicarse con el servidor.', '#EF4444');
+              e.currentTarget.disabled = false;
+              e.currentTarget.innerHTML = '<span>🔗</span> Vincularme a esta Pantalla';
+            }
+          });
+        });
+      }
+    } catch (err) {
+      availableDevicesList.innerHTML = '<div style="color:#EF4444;text-align:center;padding:20px;">Error al cargar las pantallas disponibles.</div>';
+    }
+  }
+
   // ================= PANEL DE USUARIO ANUNCIANTE (PONER PUBLICIDAD) =================
   const userPortalAdsContainer = document.getElementById('user-portal-ads-container');
+  const userPortalTvSwitcher = document.getElementById('user-portal-tv-switcher');
   const userPortalTvName = document.getElementById('user-portal-tv-name');
   const userPortalTvLocation = document.getElementById('user-portal-tv-location');
   const userPortalTvTariff = document.getElementById('user-portal-tv-tariff');
   const userPortalTvSlots = document.getElementById('user-portal-tv-slots');
   const btnUserOpenUpload = document.getElementById('btn-user-open-upload');
+  const btnUserOpenCatalog = document.getElementById('btn-user-open-catalog');
   const btnRefreshUserAds = document.getElementById('btn-refresh-user-ads');
 
   function renderUserPortal() {
     if (!userPortalAdsContainer) return;
-    const myDevice = devices.length > 0 ? devices[0] : null;
+
+    // Selector horizontal de pantallas si el usuario tiene más de 1 pantalla vinculada
+    if (devices.length > 1) {
+      if (userPortalTvSwitcher) {
+        userPortalTvSwitcher.style.display = 'flex';
+        userPortalTvSwitcher.innerHTML = '';
+        devices.forEach(dev => {
+          const chip = document.createElement('button');
+          chip.className = `tv-switcher-chip ${dev.id === currentSelectedTvId ? 'active' : ''}`;
+          chip.innerHTML = `<span>📺</span> ${dev.name}`;
+          chip.addEventListener('click', () => {
+            currentSelectedTvId = dev.id;
+            renderUserPortal();
+          });
+          userPortalTvSwitcher.appendChild(chip);
+        });
+
+        // Chip para vincular otra pantalla adicional
+        const addChip = document.createElement('button');
+        addChip.className = 'tv-switcher-chip chip-add-new';
+        addChip.innerHTML = '<span>➕</span> Vincular otra pantalla';
+        addChip.addEventListener('click', openAvailableDevicesCatalog);
+        userPortalTvSwitcher.appendChild(addChip);
+      }
+    } else {
+      if (userPortalTvSwitcher) userPortalTvSwitcher.style.display = 'none';
+    }
+
+    // Identificar el televisor activo
+    let myDevice = devices.find(d => d.id === currentSelectedTvId);
+    if (!myDevice && devices.length > 0) {
+      myDevice = devices[0];
+      currentSelectedTvId = myDevice.id;
+    }
+
     if (!myDevice) {
       if (userPortalTvName) userPortalTvName.textContent = 'Ninguna pantalla vinculada';
-      userPortalAdsContainer.innerHTML = '<div style="color:var(--text-muted);padding:24px;text-align:center;">No tienes un televisor asignado.</div>';
+      if (userPortalTvLocation) userPortalTvLocation.textContent = 'Vincúlate a un televisor para comenzar a proyectar tus anuncios.';
+      if (userPortalTvTariff) userPortalTvTariff.textContent = '💵 Tarifas según pantalla';
+      if (userPortalTvSlots) userPortalTvSlots.textContent = '📊 Elige un cupo';
+      userPortalAdsContainer.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 48px 24px; background: rgba(30, 41, 59, 0.4); border-radius: 16px; border: 1px dashed var(--border-subtle); max-width: 580px; margin: 20px auto;">
+          <div style="font-size: 3rem; margin-bottom: 12px;">📺 🔗</div>
+          <h4 style="color: #FFF; font-size: 1.25rem; margin-bottom: 8px;">Aún no te has vinculado a ningún televisor</h4>
+          <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 18px;">
+            Elige una pantalla disponible en nuestra red comercial para ver sus especificaciones y empezar a subir tus fotos, videos o GIFs.
+          </p>
+          <button class="btn btn-primary" id="btn-user-catalog-empty" style="padding: 12px 24px; font-size: 0.95rem;">
+            <span>🔗</span> Quiero vincularme a un dispositivo
+          </button>
+        </div>
+      `;
+      const btnEmpty = document.getElementById('btn-user-catalog-empty');
+      if (btnEmpty) btnEmpty.addEventListener('click', openAvailableDevicesCatalog);
       return;
     }
 
@@ -2226,7 +2552,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div style="font-size: 3rem; margin-bottom: 12px;">📢 🎬</div>
           <h4 style="color: #FFF; font-size: 1.25rem; margin-bottom: 8px;">Aún no tienes publicidades en esta pantalla</h4>
           <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 18px;">
-            Sube tu primera foto, video o GIF animado para proyectarlo en este televisor ante tus clientes.
+            Sube tu primera foto, video o GIF animado para proyectarlo en "${myDevice.name}" ante tus clientes.
           </p>
           <button class="btn btn-primary" id="btn-user-trigger-upload" style="padding: 10px 22px; font-size: 0.95rem;">
             <span>➕</span> Subir Mi Primera Publicidad
@@ -2235,7 +2561,11 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
       const triggerBtn = document.getElementById('btn-user-trigger-upload');
       if (triggerBtn && mediaFileInput) {
-        triggerBtn.addEventListener('click', () => mediaFileInput.click());
+        triggerBtn.addEventListener('click', () => {
+          currentSelectedTvId = myDevice.id;
+          if (selectTargetTvModal) selectTargetTvModal.value = myDevice.id;
+          mediaFileInput.click();
+        });
       }
       return;
     }
@@ -2341,7 +2671,16 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (btnUserOpenUpload && mediaFileInput) {
-    btnUserOpenUpload.addEventListener('click', () => mediaFileInput.click());
+    btnUserOpenUpload.addEventListener('click', () => {
+      if (selectTargetTvModal && currentSelectedTvId) {
+        selectTargetTvModal.value = currentSelectedTvId;
+      }
+      mediaFileInput.click();
+    });
+  }
+
+  if (btnUserOpenCatalog) {
+    btnUserOpenCatalog.addEventListener('click', openAvailableDevicesCatalog);
   }
 
   if (btnRefreshUserAds) {

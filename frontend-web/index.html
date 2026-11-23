@@ -370,6 +370,9 @@
 
       <!-- ================= VISTA 4: PANEL DE USUARIO ANUNCIANTE (PONER PUBLICIDAD) ================= -->
       <section class="view-section" id="view-user-portal">
+        <!-- Switcher de pantallas si el usuario está vinculado a más de una -->
+        <div class="user-portal-tv-switcher" id="user-portal-tv-switcher" style="display: none;"></div>
+
         <!-- Banner del Televisor asignado -->
         <div class="user-portal-banner" id="user-portal-banner">
           <div class="user-portal-tv-info">
@@ -383,8 +386,11 @@
             </div>
           </div>
 
-          <div>
-            <button class="btn btn-primary" id="btn-user-open-upload" style="padding: 12px 24px; font-size: 0.95rem; box-shadow: 0 4px 20px rgba(37,99,235,0.45); gap: 8px;">
+          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <button class="btn btn-secondary" id="btn-user-open-catalog" style="padding: 12px 18px; font-size: 0.92rem; gap: 8px;">
+              <span>🔗</span> Quiero vincularme a un dispositivo
+            </button>
+            <button class="btn btn-primary" id="btn-user-open-upload" style="padding: 12px 22px; font-size: 0.95rem; box-shadow: 0 4px 20px rgba(37,99,235,0.45); gap: 8px;">
               <span>➕</span> Subir Nueva Publicidad
             </button>
           </div>
@@ -409,6 +415,33 @@
       </section>
 
     </main>
+  </div>
+
+  <!-- ================= MODAL: CATÁLOGO DE DISPOSITIVOS DISPONIBLES (PARA USUARIOS) ================= -->
+  <div class="modal-backdrop" id="available-devices-modal">
+    <div class="modal-window" style="max-width: 680px;">
+      <div class="modal-header">
+        <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+          <span>📺</span> Pantallas Disponibles para Publicitar
+        </h3>
+        <button type="button" class="modal-close-btn" id="btn-close-available-devices-modal" title="Cerrar">&times;</button>
+      </div>
+
+      <div class="modal-body" style="gap: 14px; max-height: 70vh; overflow-y: auto;">
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">
+          Explora los televisores activos en la red con sus especificaciones, tarifas y cupos comerciales. Vincúlate a las pantallas donde desees mostrar tu publicidad:
+        </p>
+
+        <div id="available-devices-list" style="display: flex; flex-direction: column; gap: 12px;">
+          <!-- Generado dinámicamente con especificaciones de cada TV -->
+        </div>
+      </div>
+
+      <div class="modal-footer" style="justify-content: space-between;">
+        <span style="font-size: 0.78rem; color: var(--text-muted);">Sin APK • Acceso 100% web desde tu navegador</span>
+        <button type="button" class="btn btn-secondary" id="btn-cancel-available-devices">Cerrar</button>
+      </div>
+    </div>
   </div>
 
   <!-- ================= MODAL: VINCULAR NUEVO TELEVISOR ================= -->
@@ -696,41 +729,127 @@
           </div>
         </form>
 
-        <!-- FORMULARIO 2: USUARIO ANUNCIANTE (PONER PUBLICIDAD EN UN TV) -->
-        <form id="form-user-login" style="display: none;">
-          <div style="display: flex; flex-direction: column; gap: 12px;">
-            <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0;">
-              Elige el televisor donde deseas publicar tus fotos o videos e ingresa su clave de acceso.
-            </p>
-
-            <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
-              <label class="form-label" style="font-size: 0.82rem; color: var(--text-muted);">📺 Televisor donde deseas poner publicidad:</label>
-              <select id="login-tv-select" class="form-input" style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 10px 12px; border-radius: 6px; font-size: 0.88rem;">
-                <option value="">Cargando pantallas disponibles...</option>
-              </select>
-            </div>
-
-            <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
-              <label class="form-label" style="font-size: 0.82rem; color: var(--text-muted);">🔑 Clave de Acceso a este Televisor:</label>
-              <input type="password" id="login-tv-password" class="form-input" placeholder="••••••••" required autocomplete="current-password" style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 10px 12px; border-radius: 6px; font-size: 0.9rem;">
-            </div>
-
-            <div id="login-user-custom-wrap" style="display: none; flex-direction: column; gap: 6px;">
-              <label class="form-label" style="font-size: 0.82rem; color: var(--text-muted);">👤 Usuario alternativo del televisor (opcional):</label>
-              <input type="text" id="login-tv-username" class="form-input" placeholder="ej. pizzeria_juan" style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 10px 12px; border-radius: 6px; font-size: 0.9rem;">
-            </div>
-
-            <div style="display: flex; justify-content: flex-end;">
-              <button type="button" id="btn-toggle-user-login-type" style="background: none; border: none; color: #93C5FD; font-size: 0.76rem; cursor: pointer; text-decoration: underline;">
-                ¿Ingresar por nombre de usuario en vez de lista?
-              </button>
-            </div>
-
-            <button type="submit" class="btn btn-primary" id="btn-submit-user-login" style="width: 100%; justify-content: center; padding: 12px; font-size: 0.95rem; margin-top: 6px; background: linear-gradient(135deg, #4F46E5, #2563EB);">
-              <span>🎬</span> Entrar al Panel de Usuario (Poner Publicidad)
+        <!-- SECCIÓN 2: USUARIO ANUNCIANTE (INICIAR SESIÓN O CREAR CUENTA) -->
+        <div id="section-user-auth" style="display: none; flex-direction: column;">
+          <!-- SUB-PESTAÑAS: INICIAR SESIÓN / CREAR CUENTA -->
+          <div class="user-auth-subtabs">
+            <button type="button" class="user-subtab-btn active" id="subtab-user-login">
+              <span>🔑</span> Iniciar Sesión
+            </button>
+            <button type="button" class="user-subtab-btn" id="subtab-user-register">
+              <span>✨</span> Crear Cuenta (Web)
             </button>
           </div>
-        </form>
+
+          <!-- SUB-FORMULARIO A: INICIAR SESIÓN DE ANUNCIANTE -->
+          <form id="form-user-login">
+            <div style="display: flex; flex-direction: column; gap: 11px;">
+              <p style="font-size: 0.81rem; color: var(--text-muted); margin: 0;">
+                Ingresa con tu usuario y contraseña de anunciante para gestionar tus publicidades.
+              </p>
+
+              <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                <label class="form-label" style="font-size: 0.82rem; color: var(--text-muted);">👤 Nombre de Usuario o Correo:</label>
+                <input type="text" id="login-client-username" class="form-input" placeholder="ej. pizzerianapoles" required autocomplete="username" style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 10px 12px; border-radius: 6px; font-size: 0.9rem;">
+              </div>
+
+              <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                <label class="form-label" style="font-size: 0.82rem; color: var(--text-muted);">🔑 Contraseña:</label>
+                <input type="password" id="login-client-password" class="form-input" placeholder="••••••••" required autocomplete="current-password" style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 10px 12px; border-radius: 6px; font-size: 0.9rem;">
+              </div>
+
+              <!-- OPCIÓN DE ACCESO DIRECTO A PANTALLA ESPECÍFICA (LEGACY COMPATIBLE) -->
+              <div id="login-tv-select-wrap" style="display: none; flex-direction: column; gap: 6px;">
+                <label class="form-label" style="font-size: 0.82rem; color: var(--text-muted);">📺 Televisor asignado:</label>
+                <select id="login-tv-select" class="form-input" style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem;">
+                  <option value="">Cargando pantallas disponibles...</option>
+                </select>
+              </div>
+
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2px;">
+                <button type="button" id="btn-toggle-tv-direct-login" style="background: none; border: none; color: #93C5FD; font-size: 0.75rem; cursor: pointer; text-decoration: underline;">
+                  Acceder directo por TV
+                </button>
+                <button type="button" id="btn-switch-to-register" style="background: none; border: none; color: #60A5FA; font-size: 0.78rem; cursor: pointer; font-weight: 600;">
+                  ¿No tienes cuenta? Regístrate gratis
+                </button>
+              </div>
+
+              <button type="submit" class="btn btn-primary" id="btn-submit-user-login" style="width: 100%; justify-content: center; padding: 12px; font-size: 0.95rem; margin-top: 4px; background: linear-gradient(135deg, #4F46E5, #2563EB);">
+                <span>🎬</span> Iniciar Sesión en Mi Panel
+              </button>
+            </div>
+          </form>
+
+          <!-- SUB-FORMULARIO B: CREAR CUENTA DE ANUNCIANTE (SIN APK) -->
+          <form id="form-user-register" style="display: none;">
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <div style="padding: 8px 12px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; font-size: 0.78rem; color: #93C5FD;">
+                💡 <strong>Acceso 100% Web:</strong> Sin necesidad de instalar APK. Crea tu cuenta, elige la pantalla y sube tus anuncios directamente desde tu navegador.
+              </div>
+
+              <div class="form-group-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
+                  <label class="form-label" style="font-size: 0.78rem; color: var(--text-muted);">Empresa / Negocio:</label>
+                  <input type="text" id="reg-company" class="form-input" placeholder="ej. Pizzería Nápoles" required style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 8px 10px; border-radius: 6px; font-size: 0.85rem;">
+                </div>
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
+                  <label class="form-label" style="font-size: 0.78rem; color: var(--text-muted);">Teléfono / WhatsApp:</label>
+                  <input type="tel" id="reg-phone" class="form-input" placeholder="ej. 0991234567" required style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 8px 10px; border-radius: 6px; font-size: 0.85rem;">
+                </div>
+              </div>
+
+              <div class="form-group-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
+                  <label class="form-label" style="font-size: 0.78rem; color: var(--text-muted);">Nombre de Usuario:</label>
+                  <input type="text" id="reg-username" class="form-input" placeholder="ej. napoles" required autocomplete="username" style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 8px 10px; border-radius: 6px; font-size: 0.85rem;">
+                </div>
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
+                  <label class="form-label" style="font-size: 0.78rem; color: var(--text-muted);">Contraseña:</label>
+                  <input type="password" id="reg-password" class="form-input" placeholder="••••••••" required autocomplete="new-password" style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 8px 10px; border-radius: 6px; font-size: 0.85rem;">
+                </div>
+              </div>
+
+              <!-- SELECTOR DE PANTALLA DISPONIBLE Y CARACTERÍSTICAS -->
+              <div class="form-group" style="display: flex; flex-direction: column; gap: 5px;">
+                <label class="form-label" style="font-size: 0.78rem; color: var(--text-muted);">📺 Selecciona el televisor donde deseas publicitar:</label>
+                <select id="reg-tv-select" class="form-input" style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 8px 10px; border-radius: 6px; font-size: 0.85rem;">
+                  <option value="">Cargando pantallas disponibles...</option>
+                </select>
+              </div>
+
+              <!-- PREVISUALIZACIÓN DE ESPECIFICACIONES DE LA PANTALLA SELECCIONADA -->
+              <div id="reg-tv-specs-preview" class="device-spec-preview-card" style="display: none;">
+                <div class="spec-row">
+                  <span>📍 Ubicación:</span>
+                  <strong id="reg-spec-location">--</strong>
+                </div>
+                <div class="spec-row">
+                  <span>💵 Tarifa comercial:</span>
+                  <strong id="reg-spec-tariff" style="color: #6EE7B7;">--</strong>
+                </div>
+                <div class="spec-row">
+                  <span>📊 Cupos disponibles:</span>
+                  <strong id="reg-spec-slots" style="color: #93C5FD;">--</strong>
+                </div>
+                <div class="spec-row">
+                  <span>🖥️ Resolución / Soporte:</span>
+                  <strong id="reg-spec-resolution">1920x1080 (Fotos, Videos y GIFs)</strong>
+                </div>
+              </div>
+
+              <div style="display: flex; justify-content: flex-end;">
+                <button type="button" id="btn-switch-to-login" style="background: none; border: none; color: #93C5FD; font-size: 0.78rem; cursor: pointer; text-decoration: underline;">
+                  ¿Ya tienes cuenta? Inicia sesión aquí
+                </button>
+              </div>
+
+              <button type="submit" class="btn btn-primary" id="btn-submit-user-register" style="width: 100%; justify-content: center; padding: 12px; font-size: 0.95rem; margin-top: 4px; background: linear-gradient(135deg, #10B981, #059669); border-color: #059669;">
+                <span>🚀</span> Crear Cuenta y Empezar a Publicitar
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
 
       <div class="modal-footer" style="padding: 10px 18px; justify-content: center;">
