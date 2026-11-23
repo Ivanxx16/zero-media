@@ -923,8 +923,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const fileList = Array.from(files);
 
     const targetTv = devices.find(d => d.id === currentSelectedTvId) || devices[0];
-    const checkReplace = document.getElementById('check-replace-previous');
-    const shouldReplaceAll = checkReplace ? checkReplace.checked : false;
+    const shouldReplaceAll = false;
 
     showToast(`⏳ Procesando ${fileList.length} archivo(s) para el carrusel...`, '#2563EB');
 
@@ -1272,13 +1271,13 @@ document.addEventListener('DOMContentLoaded', () => {
             mediaTag: currentDetectedTag,
             fileName: currentPendingFile ? currentPendingFile.name : 'foto.png',
             dataUrl: currentPendingDataUrl,
-            replacePrevious: document.getElementById('check-replace-previous') ? document.getElementById('check-replace-previous').checked : true
+            replacePrevious: false
           })
         });
 
         const resData = await response.json();
         if (resData.success && resData.item) {
-          const shouldReplace = document.getElementById('check-replace-previous') ? document.getElementById('check-replace-previous').checked : true;
+          const shouldReplace = false;
           if (shouldReplace) {
             targetTv.items = [resData.item];
           } else {
