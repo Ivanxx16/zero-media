@@ -1,0 +1,53 @@
+# =====================================================================
+# 0Media Digital Signage — Reglas de Exclusión de Git (.gitignore)
+# =====================================================================
+
+# 1. Variables de entorno y secretos de producción (NUNCA subir a Git)
+.env
+*.env.local
+*.env.*.local
+backend/.env
+
+# 2. Bases de datos y archivos de estado en tiempo de ejecución
+*.db
+*.db-wal
+*.db-shm
+*.db.tmp
+signage.db*
+backend/signage.db*
+signage_state.json*
+backend/signage_state.json*
+
+# 3. Archivos multimedia de prueba subidos por usuarios
+backend/uploads/*
+!backend/uploads/.gitkeep
+uploads/*
+!uploads/.gitkeep
+
+# 4. Dependencias y logs
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+scratch/
+
+# 5. Compilación y caché de Android TV
+aplicacion-tv/local.properties
+local.properties
+.gradle/
+.kotlin/
+**/build/
+aplicacion-tv/**/build/
+*.iml
+.idea/
+.vscode/
+
+# 6. Claves de firma privadas (Keystore)
+*.keystore
+*.jks
+
+# 7. Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini

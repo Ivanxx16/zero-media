@@ -1,0 +1,19 @@
+services:
+  0media-signage:
+    build: .
+    container_name: 0media-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOST=0.0.0.0
+      # - PUBLIC_URL=https://signage.tudominio.com
+    volumes:
+      - uploads_data:/app/backend/uploads
+      - db_data:/app/backend
+
+volumes:
+  uploads_data:
+  db_data:

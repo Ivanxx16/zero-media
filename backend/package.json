@@ -1,0 +1,22 @@
+{
+  "name": "0media-digital-signage-backend",
+  "version": "1.0.0",
+  "description": "0Media Digital Signage — Servidor Backend Profesional con Sincronización Multi-Dispositivo y Multi-Región",
+  "main": "servidor-local.js",
+  "scripts": {
+    "start": "node servidor-local.js",
+    "dev": "node servidor-local.js"
+  },
+  "keywords": [
+    "digital-signage",
+    "android-tv",
+    "streaming",
+    "websockets",
+    "sync"
+  ],
+  "author": "0Media",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

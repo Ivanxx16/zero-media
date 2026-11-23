@@ -1,0 +1,21 @@
+{
+  "name": "0media-digital-signage",
+  "version": "1.0.0",
+  "description": "0Media Digital Signage — Sistema de Publicidad Digital Multi-Pantalla",
+  "main": "backend/servidor-local.js",
+  "scripts": {
+    "start": "node backend/servidor-local.js",
+    "dev": "node backend/servidor-local.js"
+  },
+  "keywords": [
+    "digital-signage",
+    "android-tv",
+    "streaming",
+    "websockets"
+  ],
+  "author": "0Media",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

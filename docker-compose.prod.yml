@@ -1,0 +1,54 @@
+services:
+  0media-backend:
+    build: .
+    container_name: 0media-backend
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOST=0.0.0.0
+      - PUBLIC_URL=${PUBLIC_URL}
+      - ADMIN_USER=${ADMIN_USER}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - AUTH_ENABLED=${AUTH_ENABLED:-true}
+      - SESSION_SECRET=${SESSION_SECRET}
+      - STORAGE_DRIVER=${STORAGE_DRIVER:-local}
+      - S3_ENDPOINT=${S3_ENDPOINT}
+      - S3_REGION=${S3_REGION}
+      - S3_BUCKET=${S3_BUCKET}
+      - S3_ACCESS_KEY_ID=${S3_ACCESS_KEY_ID}
+      - S3_SECRET_ACCESS_KEY=${S3_SECRET_ACCESS_KEY}
+      - S3_PUBLIC_DOMAIN=${S3_PUBLIC_DOMAIN}
+    volumes:
+      - uploads_data:/app/backend/uploads
+      - db_data:/app/backend
+    networks:
+      - 0media-net
+
+  caddy-ssl:
+    image: caddy:2-alpine
+    container_name: 0media-caddy-ssl
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - PUBLIC_DOMAIN=${PUBLIC_DOMAIN}
+    volumes:
+      - ./backend/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - 0media-backend
+    networks:
+      - 0media-net
+
+volumes:
+  uploads_data:
+  db_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  0media-net:
+    driver: bridge

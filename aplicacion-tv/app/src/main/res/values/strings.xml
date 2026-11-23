@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">0Media Digital Signage</string>
+    <string name="pairing_title">Vincular Dispositivo</string>
+    <string name="pairing_instructions">Escanea el código QR o ingresa el código manual en el panel de administración web.</string>
+    <string name="diagnostics_title">Diagnóstico del Sistema</string>
+    <string name="unpaired_status">No vinculado</string>
+    <string name="paired_status">Vinculado</string>
+</resources>

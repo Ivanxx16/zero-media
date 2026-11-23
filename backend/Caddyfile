@@ -1,0 +1,42 @@
+# =====================================================================
+# 0Media Digital Signage — Configuración Caddy con SSL Automático
+# =====================================================================
+# Caddy obtiene y renueva certificados SSL (Let's Encrypt / ZeroSSL) de forma
+# 100% automática, gestiona redirección HTTP a HTTPS y reenvía WebSockets sin
+# configuraciones complejas.
+#
+# Reemplaza 'signage.tuempresa.com' por tu dominio público real.
+
+{$PUBLIC_DOMAIN:localhost} {
+    # Límite de tamaño para subida de videos publicitarios de alta definición (500 MB)
+    request_body {
+        max_size 500MB
+    }
+
+    # Proxy inverso hacia el backend 0Media en el puerto 3000
+    # Soporta automáticamente WebSockets (WSS), streaming HTTP 206 y compresión gzip/zstd
+    reverse_proxy 0media-backend:3000 {
+        # Cabeceras estándar para propagación de IP y esquema
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Forwarded-Host {host}
+    }
+
+    # Cabeceras de seguridad recomendadas para producción
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+
+    # Registro de accesos
+    log {
+        output file /data/access.log {
+            roll_size 10MB
+            roll_keep 5
+        }
+    }
+}

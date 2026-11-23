@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>0Media Digital Signage — Panel de Administración Central</title>
+  <meta name="description" content="Centro de control maestro para gestión de pantallas Android TV y programación de campañas publicitarias independientes con videos, fotos y GIFs para 0Media Digital Signage.">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" type="image/png" href="assets/logo.png">
+</head>
+<body>
+
+  <!-- ================= SIDEBAR NAVIGATION (SOLO 2 OPCIONES) ================= -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <img src="assets/logo.png" alt="0Media Logo" class="brand-logo" id="sidebar-logo">
+      <div class="brand-text">
+        <h1>0Media Hub</h1>
+        <span>Signage Control</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <!-- OPCIÓN 1: PANTALLAS EN VIVO -->
+      <a class="nav-item active" href="#devices" data-view="devices" id="nav-devices">
+        <span class="icon">🖥️</span>
+        <span>Pantallas en Vivo</span>
+        <span class="badge-counter" id="badge-screen-count">3</span>
+      </a>
+
+      <!-- OPCIÓN 2: LISTA DE CAMPAÑAS -->
+      <a class="nav-item" href="#playlists" data-view="playlists" id="nav-playlists">
+        <span class="icon">🎬</span>
+        <span>Lista de Campañas</span>
+        <span class="badge-counter" id="badge-campaign-count">9</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-profile">
+        <div class="user-avatar" id="sidebar-user-avatar">AD</div>
+        <div class="user-info">
+          <div class="name" id="sidebar-user-name">Administrador</div>
+          <div class="role" id="sidebar-user-role">Propietario 0Media</div>
+        </div>
+      </div>
+      <button class="btn btn-secondary" id="btn-admin-logout" title="Cerrar sesión de administrador" style="margin-top: 10px; width: 100%; font-size: 0.8rem; padding: 7px 10px; border-color: rgba(239, 68, 68, 0.35); color: #EF4444; justify-content: center; gap: 6px;">
+        <span>🚪</span> Cerrar Sesión
+      </button>
+    </div>
+  </aside>
+
+  <!-- ================= MAIN WRAPPER ================= -->
+  <div class="main-wrapper">
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <h2 class="topbar-title" id="page-title">Monitor de Pantallas en Tiempo Real</h2>
+      </div>
+
+      <div class="topbar-right">
+        <div class="system-status-pill">
+          <span class="status-dot"></span>
+          <span id="gateway-status-text">Backend Socket.IO Conectado</span>
+        </div>
+
+        <button class="btn btn-secondary" id="btn-revoke-session" title="Cerrar vinculación de pantalla para volver a pedir código o escanear QR" style="border-color: rgba(239, 68, 68, 0.4); color: #EF4444;">
+          <span>🔒</span> Desvincular / Pedir Código
+        </button>
+
+        <button class="btn btn-primary" id="btn-open-pairing-modal">
+          <span>➕</span> Vincular Pantalla TV
+        </button>
+      </div>
+    </header>
+
+    <!-- CONTENT VIEWS -->
+    <main class="content-area">
+
+      <!-- ================= VISTA 1: PANTALLAS EN VIVO ================= -->
+      <section class="view-section active" id="view-devices">
+        <!-- Top Stats Row -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-title">Pantallas Conectadas</div>
+            <div class="stat-value" id="stat-total-screens">3</div>
+            <div class="stat-subtext">Android TV / Google TV</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-title">Transmisión Activa</div>
+            <div class="stat-value" id="stat-online-screens">3</div>
+            <div class="stat-subtext">En reproducción continua</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-title">Publicidades Totales</div>
+            <div class="stat-value" id="stat-total-ads">9 Anuncios</div>
+            <div class="stat-subtext">Videos, Fotos y GIFs</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-title">Disponibilidad 24/7</div>
+            <div class="stat-value">99.98%</div>
+            <div class="stat-subtext">Modo Kiosco verificado</div>
+          </div>
+        </div>
+
+        <!-- Devices Section Header -->
+        <div class="section-header">
+          <div>
+            <h3 class="section-title">Dispositivos Vinculados al Sistema</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Monitorea en tiempo real qué publicidad se está proyectando en cada televisor y su estado de salud.</p>
+          </div>
+          <button class="btn btn-secondary" id="btn-refresh-devices">
+            <span>🔄</span> Refrescar Pantallas
+          </button>
+        </div>
+
+        <!-- Devices Grid -->
+        <div class="devices-grid" id="devices-container">
+          <!-- Generado dinámicamente por JavaScript -->
+        </div>
+      </section>
+
+      <!-- ================= VISTA 2: LISTA DE CAMPAÑAS ================= -->
+      <section class="view-section" id="view-playlists">
+        <div class="section-header">
+          <div>
+            <h3 class="section-title">Programación de Publicidad por Televisor</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
+              Selecciona cualquier televisor vinculado para subirle y asignarle videos, fotos o GIFs de forma completamente independiente.
+            </p>
+          </div>
+          <button class="btn btn-primary" id="btn-sync-all">
+            <span>🔄</span> Sincronizar Todos los Televisores
+          </button>
+        </div>
+
+        <!-- APARTADO DE SELECCIÓN DE TELEVISOR VINCULADO -->
+        <div class="tv-selector-panel">
+          <div class="tv-selector-header">
+            <div class="tv-selector-title">
+              <span class="icon">📺</span>
+              <div>
+                <strong>Seleccionar Televisor Vinculado:</strong>
+                <div style="font-size: 0.78rem; color: var(--text-muted); font-weight: normal;">Elige el televisor cuya publicidad deseas administrar:</div>
+              </div>
+            </div>
+
+            <div class="tv-selector-controls">
+              <select id="campaign-tv-select" class="form-input tv-dropdown">
+                <!-- Rellenado dinámicamente con los televisores vinculados -->
+              </select>
+            </div>
+          </div>
+
+          <!-- Quick TV Chips Bar -->
+          <div class="tv-chips-bar" id="tv-chips-container">
+            <!-- Chips interactivos de televisores vinculados -->
+          </div>
+
+          <!-- Selected TV Overview Card -->
+          <div class="selected-tv-banner" id="selected-tv-banner">
+            <div class="tv-banner-left">
+              <div class="tv-banner-status">
+                <span class="status-dot"></span>
+                <span id="tv-banner-status-text">TRANSMITIENDO EN VIVO</span>
+              </div>
+              <h4 id="tv-banner-name">Samsung 65' UHD — Sala de Espera</h4>
+              <div class="tv-banner-meta" id="tv-banner-meta">
+                <span>📍 Sede Principal, Piso 1</span>
+                <span>• IP: 192.168.1.105</span>
+                <span>• Resolución: 3840x2160 (4K)</span>
+              </div>
+            </div>
+
+            <div class="tv-banner-right">
+              <div class="tv-banner-stats">
+                <div class="stat-mini">
+                  <span class="stat-mini-val" id="tv-banner-ad-count">3</span>
+                  <span class="stat-mini-lbl">Anuncios en Bucle</span>
+                </div>
+                <div class="stat-mini">
+                  <span class="stat-mini-val" id="tv-banner-cycle-time">42s</span>
+                  <span class="stat-mini-lbl">Ciclo Total</span>
+                </div>
+              </div>
+              <button class="btn btn-primary" id="btn-push-to-selected-tv">
+                <span>🚀</span> Publicar y Sincronizar en este TV
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- MAIN CAMPAIGN WORKSPACE: SIMULATOR & MEDIA MANAGER -->
+        <div class="campaign-workspace-grid">
+
+          <!-- COLUMNA IZQUIERDA: SIMULADOR DE TV EN VIVO PARA ESTE TELEVISOR -->
+          <div class="workspace-column">
+            <div class="workspace-card-header">
+              <h4>🖥️ Previsualización en Vivo de este Televisor</h4>
+              <span class="badge-live-tv" id="simulator-tv-tag">TV: Recepción</span>
+            </div>
+
+            <!-- TV FRAME SIMULATOR -->
+            <div class="tv-simulator-box">
+              <div class="tv-frame">
+                <div class="tv-screen-content" id="simulator-media-container">
+                  <!-- Rendered dynamically (video, image or gif) -->
+                </div>
+
+                <!-- Ticker overlay at bottom of simulator -->
+                <div class="tv-ticker-bar" id="simulator-ticker">
+                  <span class="ticker-icon">EN VIVO</span>
+                  <span class="ticker-text" id="simulator-ticker-text">0Media Digital Signage — Programación Exclusiva de esta Pantalla</span>
+                </div>
+              </div>
+
+              <!-- Simulator Controls Row -->
+              <div class="simulator-controls-row">
+                <button class="btn-sim-control" id="btn-sim-prev" title="Anterior">⏮️</button>
+                <div class="simulator-dots" id="simulator-indicators">
+                  <!-- Dots interactivos -->
+                </div>
+                <button class="btn-sim-control" id="btn-sim-next" title="Siguiente">⏭️</button>
+                <span class="sim-timer-pill" id="sim-timer-pill">Diapositiva: 1 / 3</span>
+              </div>
+            </div>
+
+            <!-- ZONA DE SUBIDA MULTIMEDIA INDEPENDIENTE PARA ESTE TV -->
+            <div class="upload-zone-card" id="drop-zone-upload">
+              <div class="upload-zone-header">
+                <div class="upload-zone-title">
+                  <span class="icon">⬆️</span>
+                  <div>
+                    <strong>Añadir Publicidad a este Televisor</strong>
+                    <div style="font-size: 0.78rem; color: var(--text-muted);">Sube videos, fotos o GIFs que se proyectarán solo en esta pantalla:</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="upload-drop-content" style="position: relative; overflow: hidden; cursor: pointer;">
+                <!-- TRANSPARENT FULL-OVERLAY NATIVE FILE INPUT: 100% RELIABLE DIRECT CLICK WITH MULTIPLE SUPPORT -->
+                <input type="file" id="media-file-input" accept="image/*,video/*,.png,.jpg,.jpeg,.webp,.gif,.mp4,.webm" multiple style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 50;">
+
+                <div class="supported-formats-pills" style="pointer-events: none;">
+                  <span class="format-pill format-video">🎬 Videos: MP4, WebM</span>
+                  <span class="format-pill format-image">🖼️ Fotos: JPG, PNG, WebP (4K)</span>
+                  <span class="format-pill format-gif">✨ Animaciones: GIF</span>
+                </div>
+
+                <p class="drop-text" style="pointer-events: none;">Arrastra tus archivos aquí o haz clic para seleccionar 1 o varios videos y fotos a la vez para el carrusel</p>
+
+                <div class="btn btn-primary" id="btn-trigger-upload-visual" style="pointer-events: none; display: inline-flex; align-items: center; gap: 8px;">
+                  <span>📂</span> Seleccionar Videos o Fotos (Uno o Varios)
+                </div>
+
+                <div style="margin-top: 14px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.1); display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: auto;">
+                  <label style="display: flex; align-items: center; gap: 7px; font-size: 0.82rem; color: #93C5FD; cursor: pointer; user-select: none;">
+                    <input type="checkbox" id="check-replace-previous" style="accent-color: #2563EB; width: 16px; height: 16px; cursor: pointer;">
+                    <strong>Reemplazar todo lo anterior</strong> (Si está desmarcado, se van sumando al carrusel)
+                  </label>
+                  <span style="font-size: 0.72rem; color: var(--text-muted);">Tip: Puedes pausar o bloquear elementos individuales abajo con el botón 🔒</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- COLUMNA DERECHA: SECUENCIA DE PUBLICIDAD ASIGNADA A ESTE TV -->
+          <div class="workspace-column">
+            <div class="workspace-card-header" style="flex-wrap: wrap; gap: 8px;">
+              <div>
+                <h4>📋 Secuencia de Reproducción Asignada</h4>
+                <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
+                  Reordena, previsualiza o elimina los anuncios específicos de este televisor.
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <button class="btn btn-secondary" id="btn-clear-all-tv-ads" style="font-size: 0.78rem; padding: 5px 10px; border-color: rgba(239,68,68,0.4); color: #EF4444;" title="Quitar todas las publicidades anteriores">
+                  🗑️ Borrar Todas
+                </button>
+                <span class="badge-counter" id="tv-items-badge">0 Anuncios</span>
+              </div>
+            </div>
+
+            <!-- PANEL DE CONTROL Y AJUSTE DE TIEMPOS DE PUBLICIDAD -->
+            <div class="duration-control-panel" id="duration-control-panel">
+              <div class="duration-panel-top">
+                <div class="duration-panel-title-wrap">
+                  <span class="duration-icon">⏱️</span>
+                  <div>
+                    <h5 class="duration-panel-title">Tiempos y Duración de la Publicidad</h5>
+                    <p class="duration-panel-desc">Ajusta cuántos segundos permanece cada video, foto o GIF en la pantalla</p>
+                  </div>
+                </div>
+                <div class="duration-stats-strip">
+                  <div class="dur-stat-item">
+                    <span class="dur-stat-label">Ciclo Total:</span>
+                    <strong class="dur-stat-value" id="stat-cycle-seconds">0s</strong>
+                  </div>
+                  <div class="dur-stat-item">
+                    <span class="dur-stat-label">Promedio:</span>
+                    <strong class="dur-stat-value" id="stat-avg-seconds">0s</strong>
+                  </div>
+                </div>
+              </div>
+
+              <!-- CONTROLES RÁPIDOS: SOLO LAS OPCIONES SOLICITADAS -->
+              <div class="duration-panel-actions">
+                <div class="duration-presets-row">
+                  <div class="duration-preset-pills" id="global-duration-pills">
+                    <button type="button" class="btn-time-pill" data-seconds="5">5s</button>
+                    <button type="button" class="btn-time-pill" data-seconds="10">10s</button>
+                    <button type="button" class="btn-time-pill" data-seconds="15">15s</button>
+                    <button type="button" class="btn-time-pill" data-seconds="20">20s</button>
+                    <button type="button" class="btn-time-pill" data-seconds="30">30s</button>
+                    <button type="button" class="btn-time-pill" data-seconds="45">45s</button>
+                    <button type="button" class="btn-time-pill" data-seconds="60">60s</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- List of Ads Assigned to Selected TV -->
+            <div class="tv-playlist-items-list" id="tv-playlist-items-container">
+              <!-- Rendered by JavaScript dynamically -->
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ================= MODAL: VINCULAR NUEVO TELEVISOR ================= -->
+  <div class="modal-backdrop" id="pairing-modal">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h3 class="modal-title">Vincular Nueva Pantalla Android TV</h3>
+        <button class="modal-close-btn" id="btn-close-modal">&times;</button>
+      </div>
+
+      <form id="form-pair-device">
+        <div class="modal-body">
+          <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 12px;">
+            Abre la app <strong>0Media Signage</strong> en tu televisor. Ingresa los <strong>6 caracteres</strong> que muestra en pantalla o escanea el QR con tu móvil:
+          </p>
+
+          <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 14px; display: flex; align-items: center; gap: 12px;">
+            <div style="font-size: 2rem; background: rgba(56, 189, 248, 0.1); border-radius: 8px; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              📱
+            </div>
+            <div style="font-size: 0.82rem; color: #94a3b8; line-height: 1.4;">
+              <strong style="color: #38bdf8; display: block;">Escaneo de Código QR o PIN:</strong>
+              Al abrir este panel desde tu móvil tras escanear el QR, o al escribir el PIN aquí, la TV comenzará la reproducción de inmediato.
+            </div>
+          </div>
+
+          <!-- 6-DIGIT PIN INPUTS -->
+          <div class="pin-input-container">
+            <input type="text" maxlength="1" class="pin-digit" id="pin-0" autofocus>
+            <input type="text" maxlength="1" class="pin-digit" id="pin-1">
+            <input type="text" maxlength="1" class="pin-digit" id="pin-2">
+            <input type="text" maxlength="1" class="pin-digit" id="pin-3">
+            <input type="text" maxlength="1" class="pin-digit" id="pin-4">
+            <input type="text" maxlength="1" class="pin-digit" id="pin-5">
+          </div>
+
+          <div class="form-group" style="margin-top: 16px;">
+            <label class="form-label" for="input-device-name">Nombre del Televisor / Dispositivo:</label>
+            <input type="text" id="input-device-name" class="form-input" placeholder="Ej. TV Entrada Principal - Pasillo Central" required value="Mi Pantalla TV">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="input-device-location">Ubicación / Sucursal:</label>
+            <input type="text" id="input-device-location" class="form-input" placeholder="Ej. Sede Central, Planta Baja" required value="Sala Principal">
+          </div>
+
+          <div style="padding: 10px 14px; background: rgba(37, 99, 235, 0.1); border: 1px solid rgba(37, 99, 235, 0.3); border-radius: 8px; font-size: 0.82rem; color: #93C5FD; display: flex; align-items: center; gap: 8px;">
+            <span>✨</span>
+            <span>La nueva pantalla se vinculará <strong>completamente limpia (0 anuncios)</strong>. Podrás subir tus fotos y videos exclusivos inmediatamente tras autorizarla.</span>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-confirm-pairing">
+            <span>🔗</span> Autorizar y Vincular Dispositivo
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: CONFIGURAR ANUNCIO SUBIDO ================= -->
+  <div class="modal-backdrop" id="upload-config-modal">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h3 class="modal-title" id="upload-modal-title">Configurar Nueva Publicidad</h3>
+        <button class="modal-close-btn" id="btn-close-upload-modal">&times;</button>
+      </div>
+
+      <form id="form-confirm-upload">
+        <div class="modal-body">
+          <!-- Preview container -->
+          <div class="upload-preview-frame" id="upload-preview-container">
+            <!-- Filled dynamically with video or img -->
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="input-ad-title">Título o Nombre de la Publicidad:</label>
+            <input type="text" id="input-ad-title" class="form-input" placeholder="Ej. Promoción 2x1 Viernes de Cervezas" required>
+          </div>
+
+          <div class="form-group-grid">
+            <div class="form-group">
+              <label class="form-label" for="input-ad-type">Tipo de Contenido Detectado:</label>
+              <input type="text" id="input-ad-type" class="form-input" readonly style="color: var(--primary-cyan); font-weight: 700;">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="input-ad-duration">Duración en Pantalla:</label>
+              <input type="hidden" id="input-ad-duration" value="15">
+              <div class="duration-preset-pills" id="upload-duration-presets" style="margin-top: 6px;">
+                <button type="button" class="btn-time-pill" data-dur="5">5s</button>
+                <button type="button" class="btn-time-pill" data-dur="10">10s</button>
+                <button type="button" class="btn-time-pill active" data-dur="15">15s</button>
+                <button type="button" class="btn-time-pill" data-dur="20">20s</button>
+                <button type="button" class="btn-time-pill" data-dur="30">30s</button>
+                <button type="button" class="btn-time-pill" data-dur="45">45s</button>
+                <button type="button" class="btn-time-pill" data-dur="60">60s</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="select-target-tv-modal">Televisor de Destino:</label>
+            <select id="select-target-tv-modal" class="form-input">
+              <!-- Filled with linked TVs -->
+            </select>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-upload-modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-ad-to-tv">
+            <span>➕</span> Añadir Publicidad al Televisor
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: MODIFICAR TIEMPO DE DURACIÓN ================= -->
+  <div class="modal-backdrop" id="duration-modal">
+    <div class="modal-window" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3 class="modal-title">⏱️ Modificar Duración de Publicidad</h3>
+        <button class="modal-close-btn" id="btn-close-duration-modal">&times;</button>
+      </div>
+
+      <form id="form-edit-duration">
+        <div class="modal-body">
+          <input type="hidden" id="edit-duration-item-id">
+          
+          <!-- Mini preview of selected ad -->
+          <div class="duration-item-preview-card">
+            <div class="duration-item-preview-thumb" id="duration-modal-thumb"></div>
+            <div class="duration-item-preview-details">
+              <strong id="duration-modal-title" style="color: #FFF; font-size: 0.95rem; display: block; margin-bottom: 3px;">Título de Anuncio</strong>
+              <div style="font-size: 0.78rem; color: var(--text-muted);" id="duration-modal-meta">FOTO • Televisor</div>
+            </div>
+          </div>
+
+          <!-- Interactive duration selector: ONLY 7 requested options -->
+          <div class="duration-edit-box" style="text-align: center;">
+            <label class="form-label" style="text-align: center; font-size: 0.88rem; margin-bottom: 14px; display: block;">
+              Selecciona el tiempo de visualización:
+            </label>
+            <input type="hidden" id="input-single-duration" value="15">
+
+            <div class="duration-preset-pills" id="modal-duration-pills" style="justify-content: center; gap: 8px;">
+              <button type="button" class="btn-time-pill" data-sec="5">5s</button>
+              <button type="button" class="btn-time-pill" data-sec="10">10s</button>
+              <button type="button" class="btn-time-pill" data-sec="15">15s</button>
+              <button type="button" class="btn-time-pill" data-sec="20">20s</button>
+              <button type="button" class="btn-time-pill" data-sec="30">30s</button>
+              <button type="button" class="btn-time-pill" data-sec="45">45s</button>
+              <button type="button" class="btn-time-pill" data-sec="60">60s</button>
+            </div>
+          </div>
+
+          <div style="margin-top: 16px; padding: 12px 14px; background: rgba(30, 41, 59, 0.6); border: 1px solid var(--border-subtle); border-radius: 8px;">
+            <label style="display: flex; align-items: center; gap: 9px; font-size: 0.82rem; color: var(--text-main); cursor: pointer; user-select: none;">
+              <input type="checkbox" id="check-apply-duration-all" style="accent-color: #2563EB; width: 17px; height: 17px; cursor: pointer;">
+              <span>Aplicar también esta misma duración a <strong>todos los demás anuncios</strong> de este televisor</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-duration-modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-duration">
+            <span>💾</span> Guardar Duración en TV
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: VISOR DE PREVISUALIZACIÓN MULTIMEDIA ================= -->
+  <div class="modal-backdrop" id="preview-modal">
+    <div class="modal-window modal-window-large">
+      <div class="modal-header">
+        <h3 class="modal-title" id="preview-modal-title">Previsualización de Publicidad</h3>
+        <button class="modal-close-btn" id="btn-close-preview-modal">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 16px;">
+        <div class="full-media-viewer" id="full-media-viewer">
+          <!-- Full image or video dynamically loaded -->
+        </div>
+        <div class="preview-meta-row" id="preview-meta-row" style="margin-top: 14px; display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted);">
+          <!-- Details -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: INICIO DE SESIÓN ADMINISTRADOR ================= -->
+  <div class="modal-backdrop" id="login-modal" style="z-index: 99999;">
+    <div class="modal-window" style="max-width: 420px; border-color: rgba(37, 99, 235, 0.4); box-shadow: 0 20px 40px rgba(0,0,0,0.8), 0 0 25px rgba(37,99,235,0.25);">
+      <div class="modal-header" style="text-align: center; justify-content: center; position: relative;">
+        <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+          <span>🔐</span> 0Media — Iniciar Sesión
+        </h3>
+      </div>
+      <form id="form-admin-login">
+        <div class="modal-body" style="gap: 16px;">
+          <p style="font-size: 0.84rem; color: var(--text-muted); text-align: center; margin: 0;">
+            Ingresa las credenciales maestras para acceder al control de pantallas y campañas publicitarias.
+          </p>
+
+          <div id="login-error-alert" style="display: none; padding: 10px 14px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 8px; color: #FCA5A5; font-size: 0.82rem;">
+            <!-- Error message -->
+          </div>
+
+          <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+            <label class="form-label" style="font-size: 0.82rem; color: var(--text-muted);">Usuario Administrador</label>
+            <input type="text" id="login-username" class="form-input" placeholder="admin" value="admin" required autocomplete="username" style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 10px 12px; border-radius: 6px; font-size: 0.9rem;">
+          </div>
+
+          <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+            <label class="form-label" style="font-size: 0.82rem; color: var(--text-muted);">Contraseña Maestra</label>
+            <input type="password" id="login-password" class="form-input" placeholder="••••••••" required autocomplete="current-password" style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 10px 12px; border-radius: 6px; font-size: 0.9rem;">
+          </div>
+        </div>
+
+        <div class="modal-footer" style="justify-content: stretch;">
+          <button type="submit" class="btn btn-primary" id="btn-submit-login" style="width: 100%; justify-content: center; padding: 12px; font-size: 0.95rem;">
+            <span>🚀</span> Entrar al Panel de Control
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="app.js?v=2.6"></script>
+</body>
+</html>
