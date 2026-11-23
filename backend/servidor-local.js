@@ -2176,6 +2176,64 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // 13.1 REORDENAR Y MOVER ANUNCIOS EN LA LISTA DEL TELEVISOR
+  if (req.method === 'POST' && url === '/api/v1/devices/reorder-items') {
+    const authUser = getAuthUser(req);
+    if (!authUser) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: "No autorizado para reordenar anuncios." }));
+      return;
+    }
+
+    parseBody(data => {
+      const { targetTvId, itemIds } = data;
+      if (!targetTvId || !Array.isArray(itemIds)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: "Datos de reordenamiento incompletos." }));
+        return;
+      }
+
+      const targetDevice = state.devices.find(d => d.id === targetTvId);
+      if (!targetDevice || !Array.isArray(targetDevice.items)) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: "Dispositivo no encontrado." }));
+        return;
+      }
+
+      // Reordenar items según itemIds
+      const itemsMap = new Map(targetDevice.items.map(it => [it.id, it]));
+      const newItems = [];
+      itemIds.forEach(id => {
+        if (itemsMap.has(id)) {
+          newItems.push(itemsMap.get(id));
+          itemsMap.delete(id);
+        }
+      });
+      // Agregar los que falten por seguridad
+      for (const it of itemsMap.values()) {
+        newItems.push(it);
+      }
+
+      newItems.forEach((it, idx) => {
+        it.orderIndex = idx + 1;
+      });
+
+      targetDevice.items = newItems;
+      state.manifestVersion = "v" + Date.now();
+      saveState();
+      broadcastPlaylistUpdated(state.manifestVersion, 'Orden de lista actualizado');
+
+      console.log(`[REORDER] ${newItems.length} anuncios reordenados en pantalla "${targetDevice.name}". Versión: ${state.manifestVersion}`);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: true,
+        manifestVersion: state.manifestVersion,
+        itemsCount: newItems.length
+      }));
+    });
+    return;
+  }
+
   // 13.0 BANDEJA DE APROBACIONES PENDIENTES (SOLO ADMIN)
   if (req.method === 'GET' && url === '/api/v1/admin/pending-approvals') {
     if (!checkAdminAuth(req)) {

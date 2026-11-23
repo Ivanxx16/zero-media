@@ -112,6 +112,41 @@ document.addEventListener('DOMContentLoaded', () => {
   const statCycleSeconds = document.getElementById('stat-cycle-seconds');
   const statAvgSeconds = document.getElementById('stat-avg-seconds');
   const globalDurationPills = document.getElementById('global-duration-pills');
+  const playlistClientFilters = document.getElementById('playlist-client-filters');
+  const clientFilterPills = document.getElementById('client-filter-pills');
+  let currentPlaylistClientFilter = 'all';
+
+  // Paleta de Colores Exclusivos por Anunciante (Identidad Visual DOOH)
+  const CLIENT_COLOR_PALETTES = [
+    { id: 'emerald', border: '#10B981', bg: 'rgba(16, 185, 129, 0.12)', text: '#34D399', badgeBg: 'rgba(16, 185, 129, 0.22)', glow: 'rgba(16, 185, 129, 0.35)' },
+    { id: 'purple',  border: '#A855F7', bg: 'rgba(168, 85, 247, 0.12)', text: '#C084FC', badgeBg: 'rgba(168, 85, 247, 0.22)', glow: 'rgba(168, 85, 247, 0.35)' },
+    { id: 'amber',   border: '#F59E0B', bg: 'rgba(245, 158, 11, 0.12)', text: '#FBBF24', badgeBg: 'rgba(245, 158, 11, 0.22)', glow: 'rgba(245, 158, 11, 0.35)' },
+    { id: 'rose',    border: '#F43F5E', bg: 'rgba(244, 63, 94, 0.12)',  text: '#FB7185', badgeBg: 'rgba(244, 63, 94, 0.22)',  glow: 'rgba(244, 63, 94, 0.35)' },
+    { id: 'cyan',    border: '#06B6D4', bg: 'rgba(6, 182, 212, 0.12)',  text: '#22D3EE', badgeBg: 'rgba(6, 182, 212, 0.22)',  glow: 'rgba(6, 182, 212, 0.35)' },
+    { id: 'orange',  border: '#F97316', bg: 'rgba(249, 115, 22, 0.12)', text: '#FB923C', badgeBg: 'rgba(249, 115, 22, 0.22)', glow: 'rgba(249, 115, 22, 0.35)' },
+    { id: 'indigo',  border: '#6366F1', bg: 'rgba(99, 102, 241, 0.12)', text: '#818CF8', badgeBg: 'rgba(99, 102, 241, 0.22)', glow: 'rgba(99, 102, 241, 0.35)' },
+    { id: 'teal',    border: '#14B8A6', bg: 'rgba(20, 184, 166, 0.12)', text: '#2DD4BF', badgeBg: 'rgba(20, 184, 166, 0.22)', glow: 'rgba(20, 184, 166, 0.35)' },
+    { id: 'lime',    border: '#84CC16', bg: 'rgba(132, 204, 22, 0.12)', text: '#A3E635', badgeBg: 'rgba(132, 204, 22, 0.22)', glow: 'rgba(132, 204, 22, 0.35)' },
+    { id: 'pink',    border: '#EC4899', bg: 'rgba(236, 72, 153, 0.12)', text: '#F472B6', badgeBg: 'rgba(236, 72, 153, 0.22)', glow: 'rgba(236, 72, 153, 0.35)' },
+  ];
+  const DEFAULT_ADMIN_THEME = {
+    id: 'blue', border: '#3B82F6', bg: 'rgba(59, 130, 246, 0.12)', text: '#60A5FA', badgeBg: 'rgba(59, 130, 246, 0.22)', glow: 'rgba(59, 130, 246, 0.35)'
+  };
+
+  function getClientTheme(item) {
+    if (!item) return DEFAULT_ADMIN_THEME;
+    const rawName = (item.clientName || '').trim();
+    const ownerId = (item.ownerId || '').trim();
+    if (!rawName && (!ownerId || ownerId === 'admin')) {
+      return DEFAULT_ADMIN_THEME;
+    }
+    const key = (rawName || ownerId).toLowerCase();
+    let hash = 0;
+    for (let i = 0; i < key.length; i++) {
+      hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
+    }
+    return CLIENT_COLOR_PALETTES[hash % CLIENT_COLOR_PALETTES.length];
+  }
 
   // Modal de Modificación de Duración de Publicidad
   const durationModal = document.getElementById('duration-modal');
@@ -714,6 +749,9 @@ document.addEventListener('DOMContentLoaded', () => {
         chip.className = `tv-chip ${dev.id === currentSelectedTvId ? 'active' : ''}`;
         chip.innerHTML = `<span>📺</span> <span>${dev.name.split('—')[0].trim()}</span> <span style="font-size: 0.72rem; opacity: 0.8; font-family: var(--font-mono);">(${dev.items.length})</span>`;
         chip.addEventListener('click', () => {
+          if (currentSelectedTvId !== dev.id) {
+            currentPlaylistClientFilter = 'all';
+          }
           currentSelectedTvId = dev.id;
           renderTvSelector();
         });
@@ -778,6 +816,7 @@ document.addEventListener('DOMContentLoaded', () => {
     tvPlaylistItemsContainer.innerHTML = '';
 
     if (device.items.length === 0) {
+      if (playlistClientFilters) playlistClientFilters.style.display = 'none';
       tvPlaylistItemsContainer.innerHTML = `
         <div style="text-align: center; padding: 40px; background: var(--bg-card); border-radius: 16px; border: 1px dashed var(--border-subtle);">
           <div style="font-size: 2.2rem; margin-bottom: 10px;">📭</div>
@@ -790,10 +829,105 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    // 1. Agrupación y Mapeo de Anunciantes por Colores Particulares
+    const clientMap = new Map();
+    device.items.forEach(it => {
+      const rawName = (it.clientName || '').trim();
+      const ownerId = (it.ownerId || '').trim();
+      const displayName = rawName || (ownerId === 'admin' || !ownerId ? 'Institucional / Admin' : `Cliente (${ownerId.substring(0, 6)})`);
+      const key = (rawName || ownerId || 'admin').toLowerCase();
+      if (!clientMap.has(key)) {
+        const theme = getClientTheme(it);
+        clientMap.set(key, { key, displayName, theme, count: 0 });
+      }
+      clientMap.get(key).count++;
+    });
+
+    // 2. Renderizar Tira de Filtros y Agrupación por Cliente
+    if (playlistClientFilters && clientFilterPills) {
+      playlistClientFilters.style.display = 'flex';
+      clientFilterPills.innerHTML = '';
+
+      // Botón "Todos"
+      const btnAll = document.createElement('button');
+      btnAll.type = 'button';
+      btnAll.className = `btn-client-filter ${currentPlaylistClientFilter === 'all' ? 'active' : ''}`;
+      btnAll.innerHTML = `<span class="client-filter-dot" style="background:#FFF;"></span>Todos <span class="client-filter-count">${device.items.length}</span>`;
+      btnAll.addEventListener('click', () => {
+        currentPlaylistClientFilter = 'all';
+        applyClientFilter();
+      });
+      clientFilterPills.appendChild(btnAll);
+
+      // Botones por Anunciante con su Color Particular
+      clientMap.forEach(cl => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `btn-client-filter ${currentPlaylistClientFilter === cl.key ? 'active' : ''}`;
+        btn.setAttribute('data-key', cl.key);
+        btn.style.borderColor = cl.theme.border + '60';
+        if (currentPlaylistClientFilter === cl.key) {
+          btn.style.background = cl.theme.bg;
+          btn.style.borderColor = cl.theme.border;
+          btn.style.color = cl.theme.text;
+        }
+        btn.innerHTML = `<span class="client-filter-dot" style="background:${cl.theme.border};"></span>👤 ${cl.displayName} <span class="client-filter-count" style="background:${cl.theme.badgeBg}; color:${cl.theme.text};">${cl.count}</span>`;
+        btn.addEventListener('click', () => {
+          currentPlaylistClientFilter = cl.key;
+          applyClientFilter();
+        });
+        clientFilterPills.appendChild(btn);
+      });
+    }
+
+    function applyClientFilter() {
+      const cards = tvPlaylistItemsContainer.querySelectorAll('.playlist-item-card');
+      cards.forEach(c => {
+        const cKey = c.getAttribute('data-client-key');
+        if (currentPlaylistClientFilter === 'all' || cKey === currentPlaylistClientFilter) {
+          c.style.display = 'flex';
+        } else {
+          c.style.display = 'none';
+        }
+      });
+
+      if (clientFilterPills) {
+        clientFilterPills.querySelectorAll('.btn-client-filter').forEach(btn => {
+          const k = btn.getAttribute('data-key');
+          if (!k && currentPlaylistClientFilter === 'all') {
+            btn.classList.add('active');
+            btn.style.background = '';
+            btn.style.borderColor = '';
+            btn.style.color = '';
+          } else if (k && k === currentPlaylistClientFilter) {
+            btn.classList.add('active');
+            const cl = clientMap.get(k);
+            if (cl) {
+              btn.style.background = cl.theme.bg;
+              btn.style.borderColor = cl.theme.border;
+              btn.style.color = cl.theme.text;
+            }
+          } else {
+            btn.classList.remove('active');
+            btn.style.background = '';
+            btn.style.borderColor = '';
+            btn.style.color = '';
+          }
+        });
+      }
+    }
+
+    // 3. Renderizar cada Anuncio con su Color Particular y Control Individual de Tiempo
     device.items.forEach((item, index) => {
       const card = document.createElement('div');
       const isBlocked = item.isEnabled === false;
       card.className = `playlist-item-card ${isBlocked ? 'is-blocked' : ''}`;
+
+      const theme = getClientTheme(item);
+      const clientKey = (item.clientName || item.ownerId || 'admin').toLowerCase();
+      card.setAttribute('data-client-key', clientKey);
+      card.style.borderLeft = `6px solid ${theme.border}`;
+      card.style.background = `linear-gradient(90deg, ${theme.bg} 0%, rgba(24, 32, 47, 0.95) 24%)`;
 
       const tagClass = item.mediaType === 'VIDEO' ? 'format-video' : (item.mediaType === 'GIF' ? 'format-gif' : 'format-image');
       const itemDur = parseInt(item.durationSeconds) || 15;
@@ -801,7 +935,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const isAdmin = currentUser && currentUser.role === 'ADMIN';
       const isOwnerOrAdmin = isAdmin || (currentUser && item.ownerId === currentUser.id);
 
-      // 1. Estado de moderación / emisión
+      // Estado de moderación / emisión
       let statusBadgeHtml = '';
       if (item.approvalStatus === 'PENDING') {
         statusBadgeHtml = `<span class="badge-status-pill pending">⏳ Pendiente de Aprobación</span>`;
@@ -811,7 +945,7 @@ document.addEventListener('DOMContentLoaded', () => {
         statusBadgeHtml = `<span class="badge-status-pill ${isBlocked ? 'blocked' : 'active'}">${isBlocked ? '🔒 Pausado / Oculto' : '🟢 Al Aire'}</span>`;
       }
 
-      // 2. Vigencia / Contrato
+      // Vigencia / Contrato
       let contractBadge = '';
       if (item.validTo) {
         const todayStr = new Date().toISOString().split('T')[0];
@@ -821,7 +955,7 @@ document.addEventListener('DOMContentLoaded', () => {
         contractBadge = `<span class="badge-contract-dates">📅 Desde ${item.validFrom}</span>`;
       }
 
-      // 3. Fila de moderación para Administrador
+      // Fila de moderación para Administrador
       let moderationRowHtml = '';
       if (isAdmin && item.approvalStatus === 'PENDING') {
         moderationRowHtml = `
@@ -835,6 +969,8 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         `;
       }
+
+      const clientLabel = item.clientName || (item.ownerId === 'admin' || !item.ownerId ? 'Institucional' : `Cliente (${item.ownerId.substring(0, 6)})`);
 
       card.innerHTML = `
         <div class="item-index-badge">#${index + 1}</div>
@@ -850,7 +986,10 @@ document.addEventListener('DOMContentLoaded', () => {
           <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px; flex-wrap: wrap;">
             <div class="item-title-text" style="margin-bottom: 0;">${item.title}</div>
             ${statusBadgeHtml}
-            <span class="badge-client-owner">👤 ${item.clientName || 'Institucional'}</span>
+            <span class="badge-client-owner" style="background:${theme.badgeBg}; color:${theme.text}; border:1px solid ${theme.border}; box-shadow: 0 0 6px ${theme.glow};">
+              <span class="client-color-dot" style="background:${theme.border};"></span>
+              👤 ${clientLabel}
+            </span>
             <span class="badge-play-count" title="Total de emisiones registradas por la app en la TV">📊 ${item.playCount || 0} emisiones</span>
             ${contractBadge}
           </div>
@@ -861,9 +1000,27 @@ document.addEventListener('DOMContentLoaded', () => {
             ${item.rejectionReason ? `<span style="color:#F87171;font-size:0.75rem;">• Motivo: ${item.rejectionReason}</span>` : ''}
           </div>
 
-          <!-- Selector de Tiempo Simple: solo 5s, 10s, 15s, 20s, 30s, 45s, 60s -->
+          <!-- Selector y Mover de Tiempo Individual: Stepper, Slider de arrastre, Input directo y Presets -->
           <div class="item-duration-row">
-            <span class="item-duration-label">⏱️ Duración:</span>
+            <div class="dur-ctrl-group">
+              <span class="item-duration-label">⏱️ Permanencia:</span>
+              
+              <!-- Stepper con input numérico directo -->
+              <div class="time-stepper-box">
+                <button type="button" class="btn-time-step btn-step-minus" data-idx="${index}" title="Restar 1 segundo" ${!isOwnerOrAdmin ? 'disabled' : ''}>−</button>
+                <input type="number" min="3" max="180" class="input-time-number" data-idx="${index}" value="${itemDur}" ${!isOwnerOrAdmin ? 'disabled' : ''}>
+                <span class="time-unit-label">seg</span>
+                <button type="button" class="btn-time-step btn-step-plus" data-idx="${index}" title="Sumar 1 segundo" ${!isOwnerOrAdmin ? 'disabled' : ''}>+</button>
+              </div>
+
+              <!-- Slider interactivo para mover físicamente el tiempo -->
+              <div class="time-slider-container">
+                <input type="range" min="3" max="60" value="${Math.min(60, itemDur)}" class="item-time-slider" data-idx="${index}" title="Mover para ajustar tiempo de permanencia" ${!isOwnerOrAdmin ? 'disabled' : ''}>
+                <span class="slider-val-badge" id="slider-badge-${index}">${itemDur}s</span>
+              </div>
+            </div>
+
+            <!-- Píldoras rápidas para este anuncio -->
             <div class="duration-preset-pills duration-card-pills" data-idx="${index}">
               ${[5, 10, 15, 20, 30, 45, 60].map(sec => `
                 <button type="button" class="btn-time-pill mini ${itemDur === sec ? 'active' : ''}" data-sec="${sec}" ${!isOwnerOrAdmin ? 'disabled' : ''}>${sec}s</button>
@@ -878,8 +1035,8 @@ document.addEventListener('DOMContentLoaded', () => {
           <button class="btn-icon-action btn-toggle-block ${isBlocked ? 'blocked' : 'active'}" data-idx="${index}" title="${isBlocked ? 'Desbloquear: proyectar en el carrusel de la TV' : 'Bloquear: pausar temporalmente de la TV'}" ${!isOwnerOrAdmin ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''}>
             ${isBlocked ? '🔒' : '👁️'}
           </button>
-          <button class="btn-icon-action btn-move-up" data-idx="${index}" title="Subir orden" ${index === 0 || !isOwnerOrAdmin ? 'disabled style="opacity:0.3;cursor:default;"' : ''}>▲</button>
-          <button class="btn-icon-action btn-move-down" data-idx="${index}" title="Bajar orden" ${index === device.items.length - 1 || !isOwnerOrAdmin ? 'disabled style="opacity:0.3;cursor:default;"' : ''}>▼</button>
+          <button class="btn-icon-action btn-move-up" data-idx="${index}" title="Mover hacia arriba" ${index === 0 || !isOwnerOrAdmin ? 'disabled style="opacity:0.3;cursor:default;"' : ''}>▲</button>
+          <button class="btn-icon-action btn-move-down" data-idx="${index}" title="Mover hacia abajo" ${index === device.items.length - 1 || !isOwnerOrAdmin ? 'disabled style="opacity:0.3;cursor:default;"' : ''}>▼</button>
           <button class="btn-icon-action btn-preview-item" data-idx="${index}" title="Previsualizar en grande">🔍</button>
           <button class="btn-icon-action danger btn-delete-item" data-idx="${index}" title="Eliminar anuncio de este televisor" ${!isOwnerOrAdmin ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''}>🗑️</button>
         </div>
@@ -888,7 +1045,126 @@ document.addEventListener('DOMContentLoaded', () => {
       tvPlaylistItemsContainer.appendChild(card);
     });
 
-    // Acciones de Moderación: Aprobar y Rechazar (Admin)
+    // Aplicar estado del filtro por cliente
+    applyClientFilter();
+
+    // Función unificada para actualizar el tiempo de permanencia particular
+    async function updateItemPermanenceTime(item, newDur, cardEl, idx) {
+      if (!item) return;
+      const validSeconds = Math.max(3, Math.min(180, parseInt(newDur) || 15));
+      item.durationSeconds = validSeconds;
+
+      // Actualizar visualmente en la tarjeta
+      if (cardEl) {
+        const inputNum = cardEl.querySelector('.input-time-number');
+        if (inputNum) inputNum.value = validSeconds;
+
+        const slider = cardEl.querySelector('.item-time-slider');
+        if (slider) slider.value = Math.min(60, validSeconds);
+
+        const badge = cardEl.querySelector('.slider-val-badge');
+        if (badge) badge.textContent = `${validSeconds}s`;
+
+        const pills = cardEl.querySelectorAll('.duration-card-pills .btn-time-pill');
+        pills.forEach(p => {
+          const sec = parseInt(p.getAttribute('data-sec'));
+          if (sec === validSeconds) p.classList.add('active');
+          else p.classList.remove('active');
+        });
+      }
+
+      saveDevices();
+      updatePlaylistStats(device);
+
+      if (currentSelectedTvId === device.id) {
+        updateSimulator(device.items);
+      }
+
+      try {
+        await apiFetch('/api/v1/devices/update-ad-duration', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ itemId: item.id, durationSeconds: validSeconds, targetTvId: device.id })
+        });
+        showToast(`⏱️ "${item.title}": permanencia cambiada a ${validSeconds}s.`, '#10B981');
+      } catch (err) {
+        showToast('⚠️ No se pudo guardar la duración en el servidor.', '#EF4444');
+      }
+    }
+
+    // 4. Conectar Eventos: Stepper [-] y [+]
+    tvPlaylistItemsContainer.querySelectorAll('.btn-step-minus').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const idx = parseInt(e.currentTarget.getAttribute('data-idx'));
+        const item = device.items[idx];
+        const card = e.currentTarget.closest('.playlist-item-card');
+        const cur = parseInt(item.durationSeconds) || 15;
+        updateItemPermanenceTime(item, cur - 1, card, idx);
+      });
+    });
+
+    tvPlaylistItemsContainer.querySelectorAll('.btn-step-plus').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const idx = parseInt(e.currentTarget.getAttribute('data-idx'));
+        const item = device.items[idx];
+        const card = e.currentTarget.closest('.playlist-item-card');
+        const cur = parseInt(item.durationSeconds) || 15;
+        updateItemPermanenceTime(item, cur + 1, card, idx);
+      });
+    });
+
+    // 5. Conectar Eventos: Input Numérico Directo
+    tvPlaylistItemsContainer.querySelectorAll('.input-time-number').forEach(input => {
+      input.addEventListener('change', (e) => {
+        const idx = parseInt(e.currentTarget.getAttribute('data-idx'));
+        const item = device.items[idx];
+        const card = e.currentTarget.closest('.playlist-item-card');
+        updateItemPermanenceTime(item, e.currentTarget.value, card, idx);
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          e.currentTarget.blur();
+        }
+      });
+    });
+
+    // 6. Conectar Eventos: Slider para Mover el Tiempo
+    tvPlaylistItemsContainer.querySelectorAll('.item-time-slider').forEach(slider => {
+      // Feedback en tiempo real mientras se mueve / arrastra el slider
+      slider.addEventListener('input', (e) => {
+        const idx = parseInt(e.currentTarget.getAttribute('data-idx'));
+        const card = e.currentTarget.closest('.playlist-item-card');
+        const val = parseInt(e.currentTarget.value);
+        if (card) {
+          const badge = card.querySelector('.slider-val-badge');
+          if (badge) badge.textContent = `${val}s`;
+          const numInput = card.querySelector('.input-time-number');
+          if (numInput) numInput.value = val;
+        }
+      });
+      // Guardar al soltar
+      slider.addEventListener('change', (e) => {
+        const idx = parseInt(e.currentTarget.getAttribute('data-idx'));
+        const item = device.items[idx];
+        const card = e.currentTarget.closest('.playlist-item-card');
+        updateItemPermanenceTime(item, e.currentTarget.value, card, idx);
+      });
+    });
+
+    // 7. Conectar Eventos: Píldoras de Presets Rápidos
+    tvPlaylistItemsContainer.querySelectorAll('.duration-card-pills .btn-time-pill').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const parentPills = e.currentTarget.closest('.duration-card-pills');
+        const idx = parseInt(parentPills.getAttribute('data-idx'));
+        const item = device.items[idx];
+        const card = e.currentTarget.closest('.playlist-item-card');
+        const newDur = parseInt(e.currentTarget.getAttribute('data-sec')) || 15;
+        updateItemPermanenceTime(item, newDur, card, idx);
+      });
+    });
+
+    // 8. Moderación: Aprobar y Rechazar (Admin)
     tvPlaylistItemsContainer.querySelectorAll('.btn-approve-ad').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         const itemId = e.currentTarget.getAttribute('data-id');
@@ -938,42 +1214,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
 
-    // Ajuste directo al hacer clic en cualquiera de las 7 opciones (5s, 10s, 15s, 20s, 30s, 45s, 60s)
-    tvPlaylistItemsContainer.querySelectorAll('.duration-card-pills .btn-time-pill').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        const parentPills = e.currentTarget.closest('.duration-card-pills');
-        const idx = parseInt(parentPills.getAttribute('data-idx'));
-        const item = device.items[idx];
-        const newDur = parseInt(e.currentTarget.getAttribute('data-sec')) || 15;
-        if (item) {
-          // Actualización visual inmediata de la píldora activa
-          parentPills.querySelectorAll('.btn-time-pill').forEach(b => b.classList.remove('active'));
-          e.currentTarget.classList.add('active');
-
-          item.durationSeconds = newDur;
-          saveDevices();
-          updatePlaylistStats(device);
-
-          // Si este televisor está seleccionado en la vista, actualizar el simulador en vivo
-          if (currentSelectedTvId === device.id) {
-            updateSimulator(device.items);
-          }
-
-          try {
-            await apiFetch('/api/v1/devices/update-ad-duration', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ itemId: item.id, durationSeconds: newDur, targetTvId: device.id })
-            });
-            showToast(`⏱️ "${item.title}": tiempo cambiado a ${newDur}s.`, '#10B981');
-          } catch (err) {
-            showToast('⚠️ No se pudo guardar la duración en el servidor.', '#EF4444');
-          }
-        }
-      });
-    });
-
-    // Toggle Bloquear / Activar Anuncio
+    // 9. Toggle Bloquear / Activar Anuncio
     tvPlaylistItemsContainer.querySelectorAll('.btn-toggle-block').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         const idx = parseInt(e.currentTarget.getAttribute('data-idx'));
@@ -996,33 +1237,68 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
 
-    // Acciones de los items de la lista
+    // 10. Mover y Reordenar Posición de Anuncio (Persistencia Completa)
     tvPlaylistItemsContainer.querySelectorAll('.btn-move-up').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', async (e) => {
         const idx = parseInt(e.currentTarget.getAttribute('data-idx'));
         if (idx > 0) {
           const temp = device.items[idx];
           device.items[idx] = device.items[idx - 1];
           device.items[idx - 1] = temp;
+          device.items.forEach((it, i) => { it.orderIndex = i + 1; });
           saveDevices();
-          showToast(`⬆️ Reordenado: "${temp.title}" ahora es el anuncio #${idx}`);
+          renderTvPlaylist(device);
+          if (currentSelectedTvId === device.id) {
+            updateSimulator(device.items);
+          }
+          showToast(`⬆️ Movido: "${temp.title}" ahora es #${idx}`, '#3B82F6');
+          try {
+            await apiFetch('/api/v1/devices/reorder-items', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                targetTvId: device.id,
+                itemIds: device.items.map(it => it.id)
+              })
+            });
+          } catch (err) {
+            console.error('[REORDER ERROR]', err);
+          }
         }
       });
     });
 
     tvPlaylistItemsContainer.querySelectorAll('.btn-move-down').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', async (e) => {
         const idx = parseInt(e.currentTarget.getAttribute('data-idx'));
         if (idx < device.items.length - 1) {
           const temp = device.items[idx];
           device.items[idx] = device.items[idx + 1];
           device.items[idx + 1] = temp;
+          device.items.forEach((it, i) => { it.orderIndex = i + 1; });
           saveDevices();
-          showToast(`⬇️ Reordenado: "${temp.title}" ahora es el anuncio #${idx + 2}`);
+          renderTvPlaylist(device);
+          if (currentSelectedTvId === device.id) {
+            updateSimulator(device.items);
+          }
+          showToast(`⬇️ Movido: "${temp.title}" ahora es #${idx + 2}`, '#3B82F6');
+          try {
+            await apiFetch('/api/v1/devices/reorder-items', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                targetTvId: device.id,
+                itemIds: device.items.map(it => it.id)
+              })
+            });
+          } catch (err) {
+            console.error('[REORDER ERROR]', err);
+          }
         }
       });
     });
 
+    // 11. Previsualizar y Eliminar Anuncios
     tvPlaylistItemsContainer.querySelectorAll('.btn-preview-item').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const idx = parseInt(e.currentTarget.getAttribute('data-idx'));
@@ -1037,7 +1313,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const item = device.items[idx];
         if (confirm(`¿Eliminar "${item.title}" de la programación de "${device.name}"?`)) {
           device.items.splice(idx, 1);
+          device.items.forEach((it, i) => { it.orderIndex = i + 1; });
           saveDevices();
+          renderTvPlaylist(device);
+          if (currentSelectedTvId === device.id) {
+            updateSimulator(device.items);
+          }
 
           try {
             await apiFetch('/api/v1/devices/delete-ad', {
@@ -1470,6 +1751,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Cambio de TV en selector
   if (campaignTvSelect) {
     campaignTvSelect.addEventListener('change', (e) => {
+      currentPlaylistClientFilter = 'all';
       currentSelectedTvId = e.target.value;
       renderTvSelector();
     });

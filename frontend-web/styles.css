@@ -1662,8 +1662,221 @@ body {
   font-weight: 600;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.client-color-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+  box-shadow: 0 0 6px currentColor;
+}
+
+/* ================= TIRA DE AGRUPACIÓN Y FILTRADO POR CLIENTE ================= */
+.playlist-client-filters-bar {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: fadeIn 0.2s ease;
+}
+
+.client-filter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.client-filter-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #F1F5F9;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.client-filter-subtitle {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.client-filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.btn-client-filter {
+  background: #1E293B;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #94A3B8;
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 4px 11px;
+  border-radius: 9999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.btn-client-filter:hover {
+  background: #283548;
+  color: #FFF;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.btn-client-filter.active {
+  color: #FFF;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.client-filter-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.client-filter-count {
+  background: rgba(0, 0, 0, 0.38);
+  padding: 1px 6px;
+  border-radius: 9999px;
+  font-size: 0.68rem;
+}
+
+/* ================= CONTROLES DE TIEMPO INDIVIDUAL Y MOVER (ADMIN) ================= */
+.dur-ctrl-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.time-stepper-box {
+  display: inline-flex;
+  align-items: center;
+  background: #0B1120;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  overflow: hidden;
+  height: 27px;
+  transition: border-color 0.15s ease;
+}
+
+.time-stepper-box:focus-within {
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 1px #3B82F6;
+}
+
+.btn-time-step {
+  background: #1E293B;
+  border: none;
+  color: #E2E8F0;
+  width: 25px;
+  height: 100%;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s, color 0.12s;
+  user-select: none;
+  padding: 0;
+  line-height: 1;
+}
+
+.btn-time-step:hover:not(:disabled) {
+  background: #2563EB;
+  color: #FFF;
+}
+
+.btn-time-step:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.input-time-number {
+  width: 40px;
+  height: 100%;
+  background: transparent;
+  border: none;
+  color: #FFF;
+  text-align: center;
+  font-family: var(--font-heading), monospace;
+  font-size: 0.85rem;
+  font-weight: 700;
+  outline: none;
+  padding: 0 2px;
+  -moz-appearance: textfield;
+}
+
+.input-time-number::-webkit-inner-spin-button,
+.input-time-number::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.time-unit-label {
+  font-size: 0.68rem;
+  color: #94A3B8;
+  font-weight: 600;
+  margin-right: 5px;
+  user-select: none;
+}
+
+.time-slider-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(15, 23, 42, 0.7);
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  height: 27px;
+}
+
+.item-time-slider {
+  width: 80px;
+  height: 4px;
+  border-radius: 2px;
+  background: #334155;
+  outline: none;
+  cursor: pointer;
+  accent-color: #3B82F6;
+  transition: opacity 0.15s ease;
+}
+
+.item-time-slider:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.slider-val-badge {
+  font-family: var(--font-heading), monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #60A5FA;
+  min-width: 24px;
+  text-align: right;
+  user-select: none;
 }
 
 .badge-contract-dates {
