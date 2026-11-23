@@ -2737,15 +2737,15 @@ document.addEventListener('DOMContentLoaded', () => {
       if (data.isAuthenticated && data.user) {
         currentUser = data.user;
         applyUserRoleUI();
-        if (!window.location.hash || window.location.hash === '#welcome') {
-          switchView(currentUser.role === 'ADMIN' ? 'devices' : 'user-portal');
+        if (window.location.hash === '#welcome' || window.location.pathname.includes('/welcome') || !window.location.hash) {
+          switchView('welcome');
         } else {
           handleHash();
         }
       } else {
         currentUser = null;
         applyUserRoleUI();
-        if (!window.location.hash) {
+        if (window.location.hash === '#welcome' || window.location.pathname.includes('/welcome') || !window.location.hash) {
           switchView('welcome');
         } else {
           handleHash();

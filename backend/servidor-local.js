@@ -1410,8 +1410,8 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // 2. PANEL DE ADMINISTRACIÓN WEB
-  if (url === '/' || url === '/admin' || url === '/admin/' || url === '/index.html' || url === '/admin/index.html') {
+  // 2. PANEL DE ADMINISTRACIÓN WEB Y BIENVENIDA
+  if (url === '/' || url === '/admin' || url === '/admin/' || url === '/index.html' || url === '/admin/index.html' || url === '/welcome' || url === '/welcome/') {
     const indexPath = path.join(FRONTEND_DIR, 'index.html');
     if (fs.existsSync(indexPath)) {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });

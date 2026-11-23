@@ -1,11 +1,11 @@
 @echo off
-title 0Media Digital Signage — Panel de Administrador
+title Zero Media — Pantalla de Bienvenida
 echo ===================================================================
-echo     0Media Digital Signage — Hub de Administracion y Control
+echo     Zero Media — Tu mejor alternativa para hacer Publicidad
 echo ===================================================================
-echo Abriendo el panel de control en tu navegador web...
-start http://localhost:3000
+echo Abriendo la pantalla de bienvenida en tu navegador web...
+start http://localhost:3000/#welcome
 echo.
-echo Panel ejecutado con exito en http://localhost:3000
+echo Pagina de bienvenida ejecutada con exito en http://localhost:3000/#welcome
 echo.
 pause
