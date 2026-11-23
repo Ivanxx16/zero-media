@@ -128,28 +128,42 @@ function parseCookies(req) {
   return list;
 }
 
-function checkAdminAuth(req) {
-  if (!AUTH_ENABLED) return true;
-
+function getAuthUser(req) {
   // 1. Cabecera Authorization: Bearer <token>
   const authHeader = req.headers['authorization'] || '';
   if (authHeader.startsWith('Bearer ')) {
     const token = authHeader.slice(7).trim();
-    if (validateSession(token)) return true;
+    const session = validateSession(token);
+    if (session) return session.user;
   }
 
   // 2. Cookie segura de sesión HttpOnly
   const cookies = parseCookies(req);
-  if (cookies['0media_session'] && validateSession(cookies['0media_session'])) {
-    return true;
+  if (cookies['0media_session']) {
+    const session = validateSession(cookies['0media_session']);
+    if (session) return session.user;
   }
 
   // 3. Clave estática secreta de integración (ADMIN_SECRET)
   if (ADMIN_SECRET && req.headers['x-admin-secret'] === ADMIN_SECRET) {
-    return true;
+    return { id: 'admin', username: ADMIN_USER || 'admin', role: 'ADMIN', name: 'SuperAdmin', company: '0Media Digital Signage' };
   }
 
-  return false;
+  // 4. Si la autenticación global está desactivada en modo dev, retornar usuario admin por defecto
+  if (!AUTH_ENABLED) {
+    return { id: 'admin', username: ADMIN_USER || 'admin', role: 'ADMIN', name: 'Administrador 0Media', company: '0Media Digital Signage' };
+  }
+
+  return null;
+}
+
+function checkAdminAuth(req) {
+  const user = getAuthUser(req);
+  return user && user.role === 'ADMIN';
+}
+
+function checkAnyAuth(req) {
+  return getAuthUser(req) !== null;
 }
 
 // ---------------- 1.3 PROTECCIÓN CONTRA ATAQUES: RATE LIMITER EN MEMORIA (Sliding Window) ----------------
@@ -319,7 +333,39 @@ try {
       key TEXT PRIMARY KEY,
       value TEXT
     );
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      username TEXT UNIQUE,
+      email TEXT,
+      password_hash TEXT,
+      name TEXT,
+      company TEXT,
+      role TEXT,
+      phone TEXT,
+      assigned_devices TEXT,
+      is_active INTEGER DEFAULT 1,
+      created_at INTEGER
+    );
+    CREATE TABLE IF NOT EXISTS playback_metrics (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      device_id TEXT,
+      playlist_item_id TEXT,
+      asset_id TEXT,
+      played_at INTEGER,
+      rendered_duration_ms INTEGER,
+      completed_normally INTEGER
+    );
   `);
+
+  // Migraciones automáticas no destructivas
+  try { sqliteDb.exec("ALTER TABLE devices ADD COLUMN tariff TEXT;"); } catch (e) {}
+  try { sqliteDb.exec("ALTER TABLE devices ADD COLUMN max_slots INTEGER DEFAULT 10;"); } catch (e) {}
+  try { sqliteDb.exec("ALTER TABLE global_items ADD COLUMN owner_id TEXT;"); } catch (e) {}
+  try { sqliteDb.exec("ALTER TABLE global_items ADD COLUMN client_name TEXT;"); } catch (e) {}
+  try { sqliteDb.exec("ALTER TABLE global_items ADD COLUMN valid_from TEXT;"); } catch (e) {}
+  try { sqliteDb.exec("ALTER TABLE global_items ADD COLUMN valid_to TEXT;"); } catch (e) {}
+  try { sqliteDb.exec("ALTER TABLE global_items ADD COLUMN approval_status TEXT DEFAULT 'APPROVED';"); } catch (e) {}
+
   console.log('[DATABASE] Motor SQLite inicializado en modo WAL con protección contra cortes de energía.');
 } catch (err) {
   console.warn('[DATABASE] SQLite nativo no disponible, usando motor de persistencia JSON atómico:', err.message);
@@ -330,7 +376,8 @@ try {
 let state = {
   devices: [],
   manifestVersion: "v1.0.0",
-  customItems: []
+  customItems: [],
+  users: []
 };
 
 function generateUniquePairingCode() {
@@ -379,7 +426,9 @@ function loadState() {
           deviceInfo: row.device_info ? JSON.parse(row.device_info) : {},
           items: row.items ? JSON.parse(row.items) : [],
           lastInitiated: row.last_initiated,
-          lastPairedAt: row.last_paired_at
+          lastPairedAt: row.last_paired_at,
+          tariff: row.tariff || '',
+          maxSlots: row.max_slots || 10
         }));
 
         state.customItems = itemRows.map(row => ({
@@ -399,6 +448,26 @@ function loadState() {
           isEnabled: Boolean(row.is_enabled)
         }));
 
+        try {
+          const userRows = sqliteDb.prepare('SELECT * FROM users').all();
+          if (userRows && userRows.length > 0) {
+            state.users = userRows.map(u => ({
+              id: u.id,
+              username: u.username,
+              email: u.email,
+              passwordHash: u.password_hash,
+              name: u.name,
+              company: u.company,
+              role: u.role || 'CLIENT',
+              phone: u.phone,
+              assignedDevices: u.assigned_devices ? JSON.parse(u.assigned_devices) : ['*'],
+              isActive: Boolean(u.is_active),
+              createdAt: u.created_at
+            }));
+            console.log(`[STATE] Cargados ${state.users.length} usuarios anunciantes desde SQLite.`);
+          }
+        } catch (uErr) {}
+
         if (metaVer && metaVer.value) state.manifestVersion = metaVer.value;
         loadedFromSqlite = true;
         console.log(`[STATE] Cargado desde SQLite: ${state.devices.length} pantallas, ${state.customItems.length} anuncios globales.`);
@@ -417,6 +486,7 @@ function loadState() {
       }
       if (data.manifestVersion) state.manifestVersion = data.manifestVersion;
       if (Array.isArray(data.customItems)) state.customItems = data.customItems;
+      if (Array.isArray(data.users)) state.users = data.users;
       console.log(`[STATE] Migrado desde ${STATE_FILE}: ${state.devices.length} dispositivos y ${state.customItems.length} anuncios.`);
       saveState(); // Sincroniza inmediatamente a SQLite
     } catch (err) {
@@ -436,9 +506,9 @@ function saveState() {
           id, fingerprint, name, location, model, resolution, ip, status,
           pairing_code, is_paired, has_been_paired, temp_token, permanent_token,
           tenant_id, ram_usage, free_disk, temp, campaign_name, device_info,
-          items, last_initiated, last_paired_at, updated_at
+          items, last_initiated, last_paired_at, tariff, max_slots, updated_at
         ) VALUES (
-          ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+          ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
         )
       `);
 
@@ -450,7 +520,7 @@ function saveState() {
           d.pairingCode, d.isPaired ? 1 : 0, d.hasBeenPaired ? 1 : 0, d.tempToken, d.permanentToken,
           d.tenantId, d.ramUsage, d.freeDisk, d.temp, d.campaignName,
           JSON.stringify(d.deviceInfo || {}), JSON.stringify(d.items || []),
-          d.lastInitiated || 0, d.lastPairedAt || 0, Date.now()
+          d.lastInitiated || 0, d.lastPairedAt || 0, d.tariff || '', parseInt(d.maxSlots, 10) || 10, Date.now()
         );
       }
 
@@ -470,6 +540,21 @@ function saveState() {
           it.id, it.assetId, it.title, it.mediaType, it.mediaTag, it.url, it.remoteUrl,
           it.durationSeconds, it.orderIndex, it.sizeText, it.fileSizeBytes,
           it.checksumSha256, it.mimeType, it.isEnabled !== false ? 1 : 0, Date.now()
+        );
+      }
+
+      // Guardar usuarios anunciantes
+      const insertUser = sqliteDb.prepare(`
+        INSERT OR REPLACE INTO users (
+          id, username, email, password_hash, name, company, role, phone, assigned_devices, is_active, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      sqliteDb.exec('DELETE FROM users;');
+      for (const u of (state.users || [])) {
+        insertUser.run(
+          u.id, u.username, u.email || '', u.passwordHash, u.name || '', u.company || '',
+          u.role || 'CLIENT', u.phone || '', JSON.stringify(u.assignedDevices || ['*']),
+          u.isActive !== false ? 1 : 0, u.createdAt || Date.now()
         );
       }
 
@@ -797,9 +882,9 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // ================= 1.1 AUTENTICACIÓN DEL PANEL DE ADMINISTRACIÓN =================
-  if (req.method === 'POST' && url === '/api/v1/admin/login') {
-    const loginLimit = isRateLimited(`login_${clientIp}`, 5, 15 * 60 * 1000); // Máx 5 intentos en 15 min
+  // ================= 1.1 AUTENTICACIÓN MULTI-ROL (ADMINISTRADOR Y CLIENTES ANUNCIANTES) =================
+  if (req.method === 'POST' && (url === '/api/v1/admin/login' || url === '/api/v1/auth/login')) {
+    const loginLimit = isRateLimited(`login_${clientIp}`, 10, 15 * 60 * 1000); // Máx 10 intentos en 15 min
     if (loginLimit.limited) {
       res.writeHead(429, { 'Content-Type': 'application/json', 'Retry-After': String(loginLimit.retryAfter) });
       res.end(JSON.stringify({
@@ -813,21 +898,20 @@ const server = http.createServer((req, res) => {
       const username = (data.username || '').trim();
       const password = data.password || '';
 
-      if (!storedAdminHash) {
-        res.writeHead(403, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({
-          success: false,
-          error: "ADMIN_PASSWORD no ha sido configurado en el entorno del servidor."
-        }));
-        return;
-      }
-
-      const validUser = username.toLowerCase() === ADMIN_USER.toLowerCase();
-      const validPass = verifyPassword(password, storedAdminHash);
-
-      if (validUser && validPass) {
-        const { token, expiresAt } = createSession(username);
-        console.log(`[AUTH] Inicio de sesión exitoso para "${username}" desde IP ${clientIp}.`);
+      // 1. Probar credenciales de SuperAdmin
+      const isDevFallback = !ADMIN_PASSWORD && (password === 'admin' || !AUTH_ENABLED);
+      const validAdmin = (username.toLowerCase() === ADMIN_USER.toLowerCase()) && 
+        ((storedAdminHash && verifyPassword(password, storedAdminHash)) || isDevFallback);
+      if (validAdmin) {
+        const adminUser = {
+          id: 'admin',
+          username: ADMIN_USER,
+          name: 'Super Administrador',
+          company: '0Media Digital Signage',
+          role: 'ADMIN'
+        };
+        const { token, expiresAt } = createSession(adminUser);
+        console.log(`[AUTH] Inicio de sesión exitoso como ADMIN para "${username}" desde IP ${clientIp}.`);
         res.writeHead(200, {
           'Content-Type': 'application/json',
           'Set-Cookie': `0media_session=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=604800`
@@ -835,22 +919,55 @@ const server = http.createServer((req, res) => {
         res.end(JSON.stringify({
           success: true,
           token: token,
-          user: { username: ADMIN_USER, role: 'Propietario 0Media' },
+          user: adminUser,
           expiresAt: expiresAt
         }));
-      } else {
-        console.warn(`[AUTH FAIL] Intento de acceso fallido para "${username}" desde IP ${clientIp}.`);
-        res.writeHead(401, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({
-          success: false,
-          error: "Credenciales de administrador incorrectas."
-        }));
+        return;
       }
+
+      // 2. Probar credenciales de Clientes / Anunciantes
+      const clientUser = (state.users || []).find(u => 
+        (u.username.toLowerCase() === username.toLowerCase() || (u.email && u.email.toLowerCase() === username.toLowerCase())) &&
+        u.isActive !== false
+      );
+
+      if (clientUser && verifyPassword(password, clientUser.passwordHash)) {
+        const userObj = {
+          id: clientUser.id,
+          username: clientUser.username,
+          name: clientUser.name,
+          company: clientUser.company || clientUser.name,
+          email: clientUser.email || '',
+          phone: clientUser.phone || '',
+          role: 'CLIENT',
+          assignedDevices: clientUser.assignedDevices || ['*']
+        };
+        const { token, expiresAt } = createSession(userObj);
+        console.log(`[AUTH] Inicio de sesión exitoso como CLIENTE para "${username}" (${clientUser.company}) desde IP ${clientIp}.`);
+        res.writeHead(200, {
+          'Content-Type': 'application/json',
+          'Set-Cookie': `0media_session=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=604800`
+        });
+        res.end(JSON.stringify({
+          success: true,
+          token: token,
+          user: userObj,
+          expiresAt: expiresAt
+        }));
+        return;
+      }
+
+      console.warn(`[AUTH FAIL] Intento de acceso fallido para "${username}" desde IP ${clientIp}.`);
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: false,
+        error: "Credenciales de usuario o contraseña incorrectas."
+      }));
     });
     return;
   }
 
-  if (req.method === 'POST' && url === '/api/v1/admin/logout') {
+  if (req.method === 'POST' && (url === '/api/v1/admin/logout' || url === '/api/v1/auth/logout')) {
     const cookies = parseCookies(req);
     const authHeader = req.headers['authorization'] || '';
     const token = authHeader.replace(/^Bearer\s+/i, '').trim() || cookies['0media_session'];
@@ -864,14 +981,166 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  if (req.method === 'GET' && url === '/api/v1/admin/auth-status') {
-    const isAuthed = checkAdminAuth(req);
+  if (req.method === 'GET' && (url === '/api/v1/admin/auth-status' || url === '/api/v1/auth/me')) {
+    const user = getAuthUser(req);
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       authEnabled: AUTH_ENABLED,
-      isAuthenticated: isAuthed,
-      user: isAuthed ? { username: ADMIN_USER } : null
+      isAuthenticated: Boolean(user),
+      user: user || null
     }));
+    return;
+  }
+
+  // ================= 1.2 GESTIÓN DE CLIENTES / ANUNCIANTES (SOLO ADMIN) =================
+  if (req.method === 'GET' && url === '/api/v1/admin/users') {
+    if (!checkAdminAuth(req)) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: "No autorizado. Solo administrador." }));
+      return;
+    }
+
+    const safeUsers = (state.users || []).map(u => ({
+      id: u.id,
+      username: u.username,
+      name: u.name,
+      company: u.company,
+      email: u.email,
+      phone: u.phone,
+      role: u.role,
+      assignedDevices: u.assignedDevices,
+      isActive: u.isActive,
+      createdAt: u.createdAt
+    }));
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: true, users: safeUsers }));
+    return;
+  }
+
+  if (req.method === 'POST' && (url === '/api/v1/admin/users' || url === '/api/v1/admin/users/create')) {
+    if (!checkAdminAuth(req)) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: "No autorizado." }));
+      return;
+    }
+
+    parseBody(data => {
+      const username = (data.username || '').toLowerCase().trim();
+      const password = data.password || '';
+      const name = (data.name || '').trim();
+      const company = (data.company || name || username).trim();
+      const email = (data.email || '').trim();
+      const phone = (data.phone || '').trim();
+      const assignedDevices = Array.isArray(data.assignedDevices) && data.assignedDevices.length > 0 ? data.assignedDevices : ['*'];
+
+      if (!username || username.length < 3) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: "El nombre de usuario debe tener al menos 3 caracteres." }));
+        return;
+      }
+
+      if (!password || password.length < 4) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: "La contraseña debe tener al menos 4 caracteres." }));
+        return;
+      }
+
+      if (username === ADMIN_USER.toLowerCase() || (state.users || []).some(u => u.username.toLowerCase() === username)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: `El usuario "${username}" ya existe en el sistema.` }));
+        return;
+      }
+
+      const newUser = {
+        id: 'usr_' + Date.now().toString(36) + '_' + crypto.randomBytes(3).toString('hex'),
+        username: username,
+        passwordHash: hashPassword(password),
+        name: name || username,
+        company: company,
+        email: email,
+        phone: phone,
+        role: 'CLIENT',
+        assignedDevices: assignedDevices,
+        isActive: true,
+        createdAt: Date.now()
+      };
+
+      if (!Array.isArray(state.users)) state.users = [];
+      state.users.push(newUser);
+      saveState();
+
+      console.log(`[USER CREATE] Anunciante registrado: "${newUser.company}" (${newUser.username}) por Admin.`);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: true,
+        message: `Cliente "${newUser.company}" creado con éxito.`,
+        user: {
+          id: newUser.id,
+          username: newUser.username,
+          name: newUser.name,
+          company: newUser.company,
+          email: newUser.email,
+          phone: newUser.phone,
+          role: newUser.role,
+          assignedDevices: newUser.assignedDevices,
+          createdAt: newUser.createdAt
+        }
+      }));
+    });
+    return;
+  }
+
+  if (req.method === 'POST' && url === '/api/v1/admin/users/delete') {
+    if (!checkAdminAuth(req)) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: "No autorizado." }));
+      return;
+    }
+
+    parseBody(data => {
+      const userId = data.userId;
+      if (!userId) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: "ID de usuario requerido." }));
+        return;
+      }
+
+      state.users = (state.users || []).filter(u => u.id !== userId);
+      saveState();
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true, message: "Usuario cliente eliminado con éxito." }));
+    });
+    return;
+  }
+
+  // ================= 1.3 CONFIGURACIÓN DE PANTALLA: TARIFAS Y DATOS =================
+  if (req.method === 'POST' && url === '/api/v1/admin/update-device-settings') {
+    if (!checkAdminAuth(req)) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: "No autorizado." }));
+      return;
+    }
+
+    parseBody(data => {
+      const dev = state.devices.find(d => d.id === data.deviceId);
+      if (!dev) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: "Pantalla no encontrada." }));
+        return;
+      }
+
+      if (data.name) dev.name = data.name.trim();
+      if (data.location) dev.location = data.location.trim();
+      if (data.tariff !== undefined) dev.tariff = String(data.tariff).trim();
+      if (data.maxSlots !== undefined) dev.maxSlots = Math.max(1, parseInt(data.maxSlots, 10) || 10);
+
+      saveState();
+      console.log(`[DEVICE SETTINGS] Pantalla "${dev.name}": Tarifa=${dev.tariff}, Ubicación=${dev.location}, Cupos=${dev.maxSlots}.`);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true, device: dev }));
+    });
     return;
   }
 
@@ -1160,8 +1429,10 @@ const server = http.createServer((req, res) => {
       targetDevice.hasBeenPaired = true;
       targetDevice.status = "ONLINE";
       targetDevice.lastPairedAt = Date.now();
-      if (data.name) targetDevice.name = data.name;
-      if (data.location) targetDevice.location = data.location;
+      if (data.name) targetDevice.name = data.name.trim();
+      if (data.location) targetDevice.location = data.location.trim();
+      if (data.tariff !== undefined) targetDevice.tariff = String(data.tariff).trim();
+      if (data.maxSlots !== undefined) targetDevice.maxSlots = Math.max(1, parseInt(data.maxSlots, 10) || 10);
       if (!Array.isArray(targetDevice.items)) targetDevice.items = [];
 
       state.manifestVersion = "v" + Date.now();
@@ -1220,25 +1491,87 @@ const server = http.createServer((req, res) => {
   }
 
   // 10. OBTENER DISPOSITIVOS PARA EL PANEL WEB
-  if (req.method === 'GET' && url === '/api/v1/admin/devices') {
-    if (!checkAdminAuth(req)) {
+  if (req.method === 'GET' && (url === '/api/v1/admin/devices' || url === '/api/v1/devices')) {
+    const authUser = getAuthUser(req);
+    if (!authUser) {
       res.writeHead(401, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ success: false, error: "No autorizado. Inicie sesión en el panel." }));
       return;
     }
 
     const pairedDevices = state.devices.filter(d => d.isPaired || d.hasBeenPaired);
+
+    // Enriquecer items con métricas de reproducción reales desde SQLite
+    const enrichItems = (items) => {
+      if (!Array.isArray(items)) return [];
+      return items.map(it => {
+        let playCount = 0;
+        if (sqliteDb) {
+          try {
+            const row = sqliteDb.prepare('SELECT COUNT(*) as cnt FROM playback_metrics WHERE playlist_item_id = ? OR asset_id = ?').get(it.id, it.assetId);
+            playCount = row ? row.cnt : 0;
+          } catch (e) {}
+        }
+        return {
+          ...it,
+          playCount: playCount
+        };
+      });
+    };
+
+    if (authUser.role === 'CLIENT') {
+      // Filtrar para el cliente: solo ve las pantallas asignadas o todas si '*',
+      // y en device.items SOLO ve sus propios anuncios (no puede ver los de otros clientes)
+      const allowedScreens = authUser.assignedDevices || ['*'];
+      const clientDevices = pairedDevices
+        .filter(d => allowedScreens.includes('*') || allowedScreens.includes(d.id))
+        .map(d => {
+          const allItems = enrichItems(d.items || []);
+          const myItems = allItems.filter(it => it.ownerId === authUser.id);
+          const totalApproved = allItems.filter(it => it.approvalStatus === 'APPROVED' && it.isEnabled !== false).length;
+          const maxSlots = parseInt(d.maxSlots, 10) || 10;
+          return {
+            ...d,
+            items: myItems, // Solo ve sus anuncios
+            totalActiveAds: totalApproved,
+            maxSlots: maxSlots,
+            availableSlots: Math.max(0, maxSlots - totalApproved),
+            tariff: d.tariff || ''
+          };
+        });
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: true,
+        devices: clientDevices,
+        role: 'CLIENT',
+        user: authUser
+      }));
+      return;
+    }
+
+    // Rol ADMIN: ve todas las pantallas y todos los anuncios con sus métricas y clientes
+    const adminDevices = pairedDevices.map(d => ({
+      ...d,
+      items: enrichItems(d.items || []),
+      tariff: d.tariff || '',
+      maxSlots: parseInt(d.maxSlots, 10) || 10
+    }));
+
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       success: true,
-      devices: pairedDevices
+      devices: adminDevices,
+      role: 'ADMIN',
+      user: authUser
     }));
     return;
   }
 
   // 11. SUBIDA DE PUBLICIDAD Y SINCRONIZACIÓN MULTI-DISPOSITIVO
   if (req.method === 'POST' && url === '/api/v1/devices/upload-ad') {
-    if (!checkAdminAuth(req)) {
+    const authUser = getAuthUser(req);
+    if (!authUser) {
       res.writeHead(401, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ success: false, error: "No autorizado para subir publicidad." }));
       return;
@@ -1246,13 +1579,19 @@ const server = http.createServer((req, res) => {
 
     parseBody(async data => {
       try {
-        const { title, durationSeconds, mediaType, mediaTag, fileName, dataUrl, replacePrevious, targetTvId } = data;
+        const { title, durationSeconds, mediaType, mediaTag, fileName, dataUrl, replacePrevious, targetTvId, validFrom, validTo, clientName, clientPhone } = data;
 
         if (!dataUrl || !fileName) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ success: false, error: "Datos de imagen o video no proporcionados" }));
           return;
         }
+
+        const isClient = authUser.role === 'CLIENT';
+        const ownerId = isClient ? authUser.id : 'admin';
+        const finalClientName = isClient ? (authUser.company || authUser.name) : (clientName || 'Institucional 0Media').trim();
+        const finalClientPhone = isClient ? (authUser.phone || '') : (clientPhone || '').trim();
+        const approvalStatus = isClient ? 'PENDING' : 'APPROVED'; // Si es cliente queda en revisión; si es admin se aprueba directo
 
         const base64Data = dataUrl.replace(/^data:[^;]+;base64,/, "");
         const fileBuffer = Buffer.from(base64Data, 'base64');
@@ -1290,6 +1629,9 @@ const server = http.createServer((req, res) => {
         const sizeKb = Math.round(fileSize / 1024);
         const sizeText = sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`;
 
+        const isGlobalBroadcast = !targetTvId || targetTvId === 'ALL' || targetTvId === 'all';
+        const targetDevice = isGlobalBroadcast ? null : state.devices.find(d => d.id === targetTvId);
+
         const newItem = {
           id: itemId,
           assetId: assetId,
@@ -1298,63 +1640,65 @@ const server = http.createServer((req, res) => {
           mediaTag: mediaTag || (ext === '.png' ? 'FOTO PNG' : (ext === '.gif' ? 'GIF ANIMADO' : (ext === '.mp4' ? 'VIDEO MP4' : 'FOTO 4K'))),
           url: relativeUrl,
           remoteUrl: dynamicRemoteUrl,
-          durationSeconds: parseInt(durationSeconds, 10) || 15,
+          durationSeconds: Math.max(1, parseInt(durationSeconds, 10) || 15),
           orderIndex: 1,
           sizeText: `${sizeText} • Adaptado`,
           fileSizeBytes: fileSize,
           checksumSha256: fileHash,
           mimeType: mimeType,
-          isEnabled: true
+          isEnabled: true,
+          // Datos comerciales y de gestión DOOH
+          ownerId: ownerId,
+          clientName: finalClientName,
+          clientPhone: finalClientPhone,
+          validFrom: validFrom || null,
+          validTo: validTo || null,
+          approvalStatus: approvalStatus,
+          tariffAmount: targetDevice?.tariff ? parseFloat(targetDevice.tariff) : 0,
+          createdAt: Date.now()
         };
-
-        // Asignación: Si targetTvId es específico se asigna a esa pantalla;
-        // Si no se especifica o es 'ALL', ¡se sincroniza a TODAS las pantallas vinculadas en cualquier ubicación geográfica!
-        const isGlobalBroadcast = !targetTvId || targetTvId === 'ALL' || targetTvId === 'all';
-        const targetDevice = isGlobalBroadcast ? null : state.devices.find(d => d.id === targetTvId);
 
         if (targetDevice) {
           if (!Array.isArray(targetDevice.items)) targetDevice.items = [];
-          if (replacePrevious === true) {
+          if (replacePrevious === true && !isClient) {
             targetDevice.items = [newItem];
           } else {
             targetDevice.items.push(newItem);
           }
           targetDevice.items.forEach((it, idx) => { it.orderIndex = idx + 1; });
-          console.log(`[UPLOAD] Publicidad asignada a pantalla específica "${targetDevice.name}" (${targetDevice.id}).`);
+          console.log(`[UPLOAD] Publicidad asignada a pantalla "${targetDevice.name}" por ${finalClientName} (Estado: ${approvalStatus}).`);
         } else {
-          // SINCRONIZACIÓN GLOBAL: Aplica a todos los dispositivos vinculados
+          // Sincronización global
           const activeDevs = state.devices.filter(d => d.isPaired);
           activeDevs.forEach(d => {
             if (!Array.isArray(d.items)) d.items = [];
-            if (replacePrevious === true) {
-              d.items = [{ ...newItem }];
-            } else {
-              d.items.push({ ...newItem });
-            }
+            d.items.push({ ...newItem });
             d.items.forEach((it, idx) => { it.orderIndex = idx + 1; });
           });
-          console.log(`[UPLOAD GLOBAL] Publicidad sincronizada a TODAS las pantallas vinculadas (${activeDevs.length} pantalla(s)).`);
+          console.log(`[UPLOAD GLOBAL] Publicidad sincronizada a ${activeDevs.length} pantallas por ${finalClientName} (Estado: ${approvalStatus}).`);
         }
 
         // Catálogo global
-        if (replacePrevious === true) {
-          state.customItems = [newItem];
-        } else {
-          state.customItems.push(newItem);
-        }
+        if (!Array.isArray(state.customItems)) state.customItems = [];
+        state.customItems.push(newItem);
         state.customItems.forEach((it, idx) => { it.orderIndex = idx + 1; });
 
         state.manifestVersion = "v" + Date.now();
         saveState();
 
-        // Transmisión inmediata vía WebSocket a las pantallas en vivo en cualquier parte del mundo
-        broadcastPlaylistUpdated(state.manifestVersion, `Nueva publicidad: ${newItem.title}`, targetDevice?.id);
+        // Solo se transmite a la pantalla física si ya está aprobada
+        if (approvalStatus === 'APPROVED') {
+          broadcastPlaylistUpdated(state.manifestVersion, `Nueva publicidad: ${newItem.title}`, targetDevice?.id);
+        }
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
           success: true,
           item: newItem,
-          items: targetDevice ? targetDevice.items : state.customItems,
+          approvalStatus: approvalStatus,
+          message: approvalStatus === 'PENDING' ? 
+            'Publicidad enviada con éxito. Está en revisión por el administrador antes de proyectarse en la pantalla.' : 
+            'Publicidad publicada y proyectada en pantalla con éxito.',
           manifestVersion: state.manifestVersion
         }));
       } catch (err) {
@@ -1368,7 +1712,8 @@ const server = http.createServer((req, res) => {
 
   // 12. BLOQUEAR / ACTIVAR ANUNCIO
   if ((req.method === 'POST' || req.method === 'GET') && url === '/api/v1/devices/toggle-block-ad') {
-    if (!checkAdminAuth(req)) {
+    const authUser = getAuthUser(req);
+    if (!authUser) {
       res.writeHead(401, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ success: false, error: "No autorizado." }));
       return;
@@ -1377,6 +1722,17 @@ const server = http.createServer((req, res) => {
     parseBody(data => {
       const itemId = data.itemId;
       const targetTvId = data.targetTvId;
+
+      // Seguridad: Clientes solo pueden alterar sus propios anuncios
+      if (authUser.role === 'CLIENT') {
+        const dev = targetTvId ? state.devices.find(d => d.id === targetTvId) : null;
+        const it = dev?.items?.find(x => x.id === itemId) || state.customItems?.find(x => x.id === itemId);
+        if (it && it.ownerId !== authUser.id) {
+          res.writeHead(403, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: "No tienes permiso para pausar este anuncio." }));
+          return;
+        }
+      }
 
       const itemInCatalog = state.customItems.find(it => it.id === itemId);
       const isEnabled = data.isEnabled !== undefined ? Boolean(data.isEnabled) : (itemInCatalog ? !itemInCatalog.isEnabled : true);
@@ -1410,7 +1766,8 @@ const server = http.createServer((req, res) => {
 
   // 13. ACTUALIZAR TIEMPO DE DURACIÓN
   if ((req.method === 'POST' || req.method === 'GET') && url === '/api/v1/devices/update-ad-duration') {
-    if (!checkAdminAuth(req)) {
+    const authUser = getAuthUser(req);
+    if (!authUser) {
       res.writeHead(401, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ success: false, error: "No autorizado." }));
       return;
@@ -1420,10 +1777,25 @@ const server = http.createServer((req, res) => {
       const { itemId, durationSeconds, applyToAll, targetTvId } = data;
       const parsedSeconds = Math.max(1, parseInt(durationSeconds, 10) || 15);
 
+      // Seguridad: Clientes solo pueden alterar la duración de sus propios anuncios
+      if (authUser.role === 'CLIENT') {
+        const dev = targetTvId ? state.devices.find(d => d.id === targetTvId) : null;
+        const it = dev?.items?.find(x => x.id === itemId) || state.customItems?.find(x => x.id === itemId);
+        if (it && it.ownerId !== authUser.id) {
+          res.writeHead(403, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: "No tienes permiso para modificar la duración de este anuncio." }));
+          return;
+        }
+      }
+
       const updateList = (list) => {
         if (!Array.isArray(list)) return;
         if (applyToAll === true) {
-          list.forEach(it => { it.durationSeconds = parsedSeconds; });
+          list.forEach(it => {
+            if (authUser.role === 'ADMIN' || it.ownerId === authUser.id) {
+              it.durationSeconds = parsedSeconds;
+            }
+          });
         } else if (itemId) {
           const it = list.find(x => x.id === itemId || x.assetId === itemId);
           if (it) it.durationSeconds = parsedSeconds;
@@ -1459,9 +1831,88 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // 13.1 MODERACIÓN DE ANUNCIOS: APROBAR
+  if (req.method === 'POST' && url === '/api/v1/devices/approve-ad') {
+    if (!checkAdminAuth(req)) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: "No autorizado. Solo administrador." }));
+      return;
+    }
+    parseBody(data => {
+      const { itemId, targetTvId } = data;
+      let targetItem = null;
+      const updateItem = (list) => {
+        if (!Array.isArray(list)) return;
+        const it = list.find(x => x.id === itemId || x.assetId === itemId);
+        if (it) {
+          it.approvalStatus = 'APPROVED';
+          it.rejectionReason = null;
+          targetItem = it;
+        }
+      };
+
+      if (targetTvId) {
+        const dev = state.devices.find(d => d.id === targetTvId);
+        if (dev && Array.isArray(dev.items)) updateItem(dev.items);
+      } else {
+        state.devices.forEach(d => { if (Array.isArray(d.items)) updateItem(d.items); });
+      }
+      updateItem(state.customItems);
+
+      state.manifestVersion = "v" + Date.now();
+      saveState();
+      broadcastPlaylistUpdated(state.manifestVersion, "Anuncio aprobado y puesto al aire");
+
+      console.log(`[MODERATION] Anuncio ${itemId} APROBADO por administrador.`);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true, item: targetItem, manifestVersion: state.manifestVersion }));
+    });
+    return;
+  }
+
+  // 13.2 MODERACIÓN DE ANUNCIOS: RECHAZAR
+  if (req.method === 'POST' && url === '/api/v1/devices/reject-ad') {
+    if (!checkAdminAuth(req)) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: "No autorizado. Solo administrador." }));
+      return;
+    }
+    parseBody(data => {
+      const { itemId, targetTvId, reason } = data;
+      let targetItem = null;
+      const updateItem = (list) => {
+        if (!Array.isArray(list)) return;
+        const it = list.find(x => x.id === itemId || x.assetId === itemId);
+        if (it) {
+          it.approvalStatus = 'REJECTED';
+          it.rejectionReason = reason || "Contenido no aprobado por el administrador.";
+          targetItem = it;
+        }
+      };
+
+      if (targetTvId) {
+        const dev = state.devices.find(d => d.id === targetTvId);
+        if (dev && Array.isArray(dev.items)) updateItem(dev.items);
+      } else {
+        state.devices.forEach(d => { if (Array.isArray(d.items)) updateItem(d.items); });
+      }
+      updateItem(state.customItems);
+
+      state.manifestVersion = "v" + Date.now();
+      saveState();
+      broadcastPlaylistUpdated(state.manifestVersion, "Anuncio rechazado de la programación");
+
+      console.log(`[MODERATION] Anuncio ${itemId} RECHAZADO por administrador.`);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true, item: targetItem, manifestVersion: state.manifestVersion }));
+    });
+    return;
+  }
+
   // 14. ELIMINAR ANUNCIO
   if (req.method === 'POST' && url === '/api/v1/devices/delete-ad') {
-    if (!checkAdminAuth(req)) {
+    const authUser = getAuthUser(req);
+    if (!authUser) {
       res.writeHead(401, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ success: false, error: "No autorizado." }));
       return;
@@ -1470,6 +1921,24 @@ const server = http.createServer((req, res) => {
     parseBody(data => {
       const itemId = data.itemId;
       const targetTvId = data.targetTvId;
+
+      // Seguridad: Si es cliente, verificar que el anuncio le pertenezca
+      if (authUser.role === 'CLIENT') {
+        let isOwner = false;
+        if (targetTvId) {
+          const dev = state.devices.find(d => d.id === targetTvId);
+          const it = dev?.items?.find(x => x.id === itemId);
+          if (it && it.ownerId === authUser.id) isOwner = true;
+        } else {
+          const it = state.customItems?.find(x => x.id === itemId);
+          if (it && it.ownerId === authUser.id) isOwner = true;
+        }
+        if (!isOwner) {
+          res.writeHead(403, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: "No tienes permiso para eliminar este anuncio." }));
+          return;
+        }
+      }
 
       if (targetTvId) {
         const dev = state.devices.find(d => d.id === targetTvId);
@@ -1547,12 +2016,20 @@ const server = http.createServer((req, res) => {
     const fingerprint = req.headers['x-hardware-fingerprint'];
     const clientIp = req.socket.remoteAddress ? req.socket.remoteAddress.replace(/^.*:/, '') : '';
 
-    let device = state.devices.find(d => 
-      (token && (d.permanentToken === token || token === 'perm_token_demo_123')) || 
-      (fingerprint && (d.fingerprint === fingerprint || (d.pairingCode && fingerprint.toUpperCase().endsWith(d.pairingCode)) || (d.id && d.id.includes(fingerprint.toLowerCase())))) ||
-      (clientIp && d.ip === clientIp)
-    );
-
+    let device = null;
+    if (token) {
+      device = state.devices.find(d => d.permanentToken === token || (token === 'perm_token_demo_123' && d.isPaired));
+    }
+    if (!device && fingerprint) {
+      device = state.devices.find(d => 
+        d.fingerprint === fingerprint || 
+        (d.pairingCode && fingerprint.toUpperCase().endsWith(d.pairingCode)) || 
+        (d.id && d.id.includes(fingerprint.toLowerCase()))
+      );
+    }
+    if (!device && clientIp) {
+      device = state.devices.find(d => d.ip === clientIp && d.isPaired);
+    }
     if (!device) {
       device = state.devices.find(d => d.isPaired);
     }
@@ -1564,7 +2041,25 @@ const server = http.createServer((req, res) => {
     }
 
     const deviceItems = Array.isArray(device.items) ? device.items : [];
-    const activeItems = deviceItems.filter(it => it.isEnabled !== false);
+    
+    // Filtro DOOH comercial: Solo anuncios APROBADOS y dentro de fechas de contrato
+    const activeItems = deviceItems.filter(item => {
+      if (item.isEnabled === false) return false;
+      // Solo anuncios con estado de aprobación 'APPROVED'
+      if (item.approvalStatus && item.approvalStatus !== 'APPROVED') return false;
+      // Control de vigencia de contratos
+      const now = new Date();
+      if (item.validFrom) {
+        const fromDate = new Date(item.validFrom);
+        if (!isNaN(fromDate.getTime()) && now < fromDate) return false;
+      }
+      if (item.validTo) {
+        const toDate = new Date(item.validTo);
+        toDate.setHours(23, 59, 59, 999);
+        if (!isNaN(toDate.getTime()) && now > toDate) return false;
+      }
+      return true;
+    });
 
     let campaigns = [];
     let assets = [];
@@ -1633,14 +2128,18 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // 18. TELEMETRÍA Y HEARTBEAT
+  // 18. TELEMETRÍA Y HEARTBEAT + PRUEBA DE EMISIÓN (PROOF OF PLAY)
   if (req.method === 'POST' && url.startsWith('/api/v1/devices/telemetry/')) {
     parseBody(data => {
       const authHeader = req.headers['authorization'] || '';
       const token = authHeader.replace(/^Bearer\s+/i, '');
       const fingerprint = req.headers['x-hardware-fingerprint'];
 
-      const dev = state.devices.find(d => (token && d.permanentToken === token) || (fingerprint && d.fingerprint === fingerprint));
+      const dev = state.devices.find(d => 
+        (token && d.permanentToken === token) || 
+        (fingerprint && d.fingerprint === fingerprint) ||
+        (data.deviceId && (d.id === data.deviceId || d.permanentToken === data.deviceId))
+      );
       if (dev) {
         dev.status = "ONLINE";
         if (data.cpuTemp) dev.temp = `${data.cpuTemp}°C`;
@@ -1653,6 +2152,32 @@ const server = http.createServer((req, res) => {
           dev.freeDisk = `${gb} GB`;
         }
         dev.lastTelemetryAt = Date.now();
+
+        // REGISTRO DE PRUEBA DE EMISIÓN (PROOF OF PLAY)
+        if (Array.isArray(data.metrics) && data.metrics.length > 0 && sqliteDb) {
+          try {
+            sqliteDb.exec('BEGIN TRANSACTION;');
+            const insertMetric = sqliteDb.prepare(`
+              INSERT INTO playback_metrics (device_id, playlist_item_id, asset_id, played_at, rendered_duration_ms, completed_normally)
+              VALUES (?, ?, ?, ?, ?, ?)
+            `);
+            for (const m of data.metrics) {
+              insertMetric.run(
+                dev.id,
+                m.playlistItemId || '',
+                m.assetId || '',
+                m.playedAt || Date.now(),
+                m.renderedDurationMs || 0,
+                m.completedNormally ? 1 : 0
+              );
+            }
+            sqliteDb.exec('COMMIT;');
+            console.log(`[PROOF OF PLAY] Registradas ${data.metrics.length} emisiones para "${dev.name}".`);
+          } catch (mErr) {
+            try { sqliteDb.exec('ROLLBACK;'); } catch (e) {}
+            console.warn('[PROOF OF PLAY ERROR]:', mErr.message);
+          }
+        }
       }
 
       res.writeHead(200, { 'Content-Type': 'application/json' });

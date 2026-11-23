@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ================= 1. ESTADO DE TELEVISORES =================
   let devices = [];
+  let currentUser = null; // Usuario autenticado: { id, username, name, company, role, email, phone }
 
   // Comprobar si la sesión de panel actual ya vinculó alguna pantalla
   const isSessionPaired = sessionStorage.getItem('0media_admin_session_paired') === 'true';
@@ -209,6 +210,50 @@ document.addEventListener('DOMContentLoaded', () => {
     throw lastError || new Error("No se pudo conectar con el servidor 0Media en el puerto 3000.");
   }
 
+  function applyUserRoleUI() {
+    const roleIcon = document.getElementById('user-role-icon');
+    const displayName = document.getElementById('user-display-name');
+    const btnUsersModal = document.getElementById('btn-open-users-modal');
+    const btnPairModal = document.getElementById('btn-open-pairing-modal');
+    const btnRevokeSession = document.getElementById('btn-revoke-session');
+    const uploadNotice = document.getElementById('upload-client-notice');
+    const inputClientName = document.getElementById('input-ad-client-name');
+    const inputClientPhone = document.getElementById('input-ad-client-phone');
+
+    if (currentUser) {
+      if (currentUser.role === 'ADMIN') {
+        if (roleIcon) roleIcon.textContent = '👑';
+        if (displayName) displayName.textContent = 'Admin Maestro';
+        if (btnUsersModal) btnUsersModal.style.display = 'inline-flex';
+        if (btnPairModal) btnPairModal.style.display = 'inline-flex';
+        if (btnRevokeSession) btnRevokeSession.style.display = 'inline-flex';
+        if (uploadNotice) uploadNotice.style.display = 'none';
+        if (inputClientName) {
+          inputClientName.value = '0Media Publicidad';
+          inputClientName.readOnly = false;
+        }
+      } else {
+        // Rol CLIENT
+        if (roleIcon) roleIcon.textContent = '🏢';
+        if (displayName) displayName.textContent = currentUser.company || currentUser.name || currentUser.username;
+        if (btnUsersModal) btnUsersModal.style.display = 'none';
+        if (btnPairModal) btnPairModal.style.display = 'none';
+        if (btnRevokeSession) btnRevokeSession.style.display = 'none';
+        if (uploadNotice) uploadNotice.style.display = 'block';
+        if (inputClientName) {
+          inputClientName.value = currentUser.company || currentUser.name || '';
+          inputClientName.readOnly = true;
+        }
+        if (inputClientPhone && currentUser.phone) {
+          inputClientPhone.value = currentUser.phone;
+        }
+      }
+    } else {
+      if (roleIcon) roleIcon.textContent = '👤';
+      if (displayName) displayName.textContent = 'Sin Identificar';
+    }
+  }
+
   function saveDevices() {
     localStorage.setItem('0media_devices_v4', JSON.stringify(devices));
     renderDevices();
@@ -372,11 +417,17 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `;
 
+      const isAdmin = currentUser && currentUser.role === 'ADMIN';
+
       card.innerHTML = `
         <div class="device-card-header">
           <div class="device-card-title-group">
             <div class="device-name">${device.name}</div>
             <div class="device-location">📍 ${device.location}</div>
+            <div style="display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap;">
+              <span class="device-tariff-badge">💵 ${device.tariff || '$50.00 / mes'}</span>
+              <span class="device-slots-badge">📊 Cupos: ${(device.items || []).length} / ${device.maxSlots || 10}</span>
+            </div>
           </div>
           ${statusBadgeHtml}
         </div>
@@ -411,12 +462,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         <div class="device-card-footer">
           <button class="btn btn-primary btn-manage-campaign" data-id="${device.id}" title="Añadir videos, fotos o GIFs a este televisor">
-            <span>🎬</span> Editar Publicidad (${device.items.length})
+            <span>🎬</span> Publicidad (${device.items.length})
           </button>
           <div class="device-secondary-btns">
+            ${isAdmin ? `<button class="btn btn-secondary btn-edit-device-settings" data-id="${device.id}" title="Configurar Tarifa y Pantalla">⚙️</button>` : ''}
             <button class="btn btn-secondary btn-alert-device" data-id="${device.id}" title="Enviar mensaje de alerta">📢</button>
             <button class="btn btn-secondary btn-sync-device" data-id="${device.id}" title="Sincronizar ahora">🔄</button>
-            <button class="btn btn-danger btn-revoke-device" data-id="${device.id}" title="Desvincular">🗑️</button>
+            ${isAdmin ? `<button class="btn btn-danger btn-revoke-device" data-id="${device.id}" title="Desvincular">🗑️</button>` : ''}
           </div>
         </div>
       `;
@@ -425,6 +477,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Delegación y eventos de botones en cada card
+    devicesContainer.querySelectorAll('.btn-edit-device-settings').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = e.currentTarget.getAttribute('data-id');
+        const dev = devices.find(d => d.id === id);
+        if (dev) openDeviceSettingsModal(dev);
+      });
+    });
     devicesContainer.querySelectorAll('.btn-quick-open-modal').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const code = e.currentTarget.getAttribute('data-code');
@@ -626,6 +685,44 @@ document.addEventListener('DOMContentLoaded', () => {
       const tagClass = item.mediaType === 'VIDEO' ? 'format-video' : (item.mediaType === 'GIF' ? 'format-gif' : 'format-image');
       const itemDur = parseInt(item.durationSeconds) || 15;
 
+      const isAdmin = currentUser && currentUser.role === 'ADMIN';
+      const isOwnerOrAdmin = isAdmin || (currentUser && item.ownerId === currentUser.id);
+
+      // 1. Estado de moderación / emisión
+      let statusBadgeHtml = '';
+      if (item.approvalStatus === 'PENDING') {
+        statusBadgeHtml = `<span class="badge-status-pill pending">⏳ Pendiente de Aprobación</span>`;
+      } else if (item.approvalStatus === 'REJECTED') {
+        statusBadgeHtml = `<span class="badge-status-pill rejected" title="${item.rejectionReason || 'Rechazado por administración'}">❌ Rechazado</span>`;
+      } else {
+        statusBadgeHtml = `<span class="badge-status-pill ${isBlocked ? 'blocked' : 'active'}">${isBlocked ? '🔒 Pausado / Oculto' : '🟢 Al Aire'}</span>`;
+      }
+
+      // 2. Vigencia / Contrato
+      let contractBadge = '';
+      if (item.validTo) {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const isExpired = todayStr > item.validTo;
+        contractBadge = `<span class="badge-contract-dates ${isExpired ? 'expired' : ''}">📅 ${item.validFrom ? item.validFrom + ' al ' : 'Hasta '}${item.validTo}${isExpired ? ' (VENCIDO)' : ''}</span>`;
+      } else if (item.validFrom) {
+        contractBadge = `<span class="badge-contract-dates">📅 Desde ${item.validFrom}</span>`;
+      }
+
+      // 3. Fila de moderación para Administrador
+      let moderationRowHtml = '';
+      if (isAdmin && item.approvalStatus === 'PENDING') {
+        moderationRowHtml = `
+          <div class="item-moderation-row">
+            <button class="btn-approve-ad" data-id="${item.id}" data-tvid="${device.id}">
+              <span>✅</span> Aprobar Anuncio
+            </button>
+            <button class="btn-reject-ad" data-id="${item.id}" data-tvid="${device.id}">
+              <span>❌</span> Rechazar
+            </button>
+          </div>
+        `;
+      }
+
       card.innerHTML = `
         <div class="item-index-badge">#${index + 1}</div>
         <div class="item-thumb-box">
@@ -637,16 +734,18 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
 
         <div class="item-info-col">
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 3px;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px; flex-wrap: wrap;">
             <div class="item-title-text" style="margin-bottom: 0;">${item.title}</div>
-            <span class="badge-status-pill ${isBlocked ? 'blocked' : 'active'}">
-              ${isBlocked ? '🔒 Bloqueado / Oculto' : '🟢 En Carrusel'}
-            </span>
+            ${statusBadgeHtml}
+            <span class="badge-client-owner">👤 ${item.clientName || 'Institucional'}</span>
+            <span class="badge-play-count" title="Total de emisiones registradas por la app en la TV">📊 ${item.playCount || 0} emisiones</span>
+            ${contractBadge}
           </div>
 
           <div class="item-meta-row">
             <span class="format-pill ${tagClass}" style="font-size: 0.68rem; padding: 2px 8px;">${item.mediaTag || item.mediaType}</span>
             <span>• ${item.sizeText || 'Optimizado'}</span>
+            ${item.rejectionReason ? `<span style="color:#F87171;font-size:0.75rem;">• Motivo: ${item.rejectionReason}</span>` : ''}
           </div>
 
           <!-- Selector de Tiempo Simple: solo 5s, 10s, 15s, 20s, 30s, 45s, 60s -->
@@ -654,24 +753,76 @@ document.addEventListener('DOMContentLoaded', () => {
             <span class="item-duration-label">⏱️ Duración:</span>
             <div class="duration-preset-pills duration-card-pills" data-idx="${index}">
               ${[5, 10, 15, 20, 30, 45, 60].map(sec => `
-                <button type="button" class="btn-time-pill mini ${itemDur === sec ? 'active' : ''}" data-sec="${sec}">${sec}s</button>
+                <button type="button" class="btn-time-pill mini ${itemDur === sec ? 'active' : ''}" data-sec="${sec}" ${!isOwnerOrAdmin ? 'disabled' : ''}>${sec}s</button>
               `).join('')}
             </div>
           </div>
+
+          ${moderationRowHtml}
         </div>
 
         <div class="item-actions-col">
-          <button class="btn-icon-action btn-toggle-block ${isBlocked ? 'blocked' : 'active'}" data-idx="${index}" title="${isBlocked ? 'Desbloquear: proyectar en el carrusel de la TV' : 'Bloquear: pausar temporalmente de la TV'}">
+          <button class="btn-icon-action btn-toggle-block ${isBlocked ? 'blocked' : 'active'}" data-idx="${index}" title="${isBlocked ? 'Desbloquear: proyectar en el carrusel de la TV' : 'Bloquear: pausar temporalmente de la TV'}" ${!isOwnerOrAdmin ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''}>
             ${isBlocked ? '🔒' : '👁️'}
           </button>
-          <button class="btn-icon-action btn-move-up" data-idx="${index}" title="Subir orden" ${index === 0 ? 'disabled style="opacity:0.3;cursor:default;"' : ''}>▲</button>
-          <button class="btn-icon-action btn-move-down" data-idx="${index}" title="Bajar orden" ${index === device.items.length - 1 ? 'disabled style="opacity:0.3;cursor:default;"' : ''}>▼</button>
+          <button class="btn-icon-action btn-move-up" data-idx="${index}" title="Subir orden" ${index === 0 || !isOwnerOrAdmin ? 'disabled style="opacity:0.3;cursor:default;"' : ''}>▲</button>
+          <button class="btn-icon-action btn-move-down" data-idx="${index}" title="Bajar orden" ${index === device.items.length - 1 || !isOwnerOrAdmin ? 'disabled style="opacity:0.3;cursor:default;"' : ''}>▼</button>
           <button class="btn-icon-action btn-preview-item" data-idx="${index}" title="Previsualizar en grande">🔍</button>
-          <button class="btn-icon-action danger btn-delete-item" data-idx="${index}" title="Eliminar anuncio de este televisor">🗑️</button>
+          <button class="btn-icon-action danger btn-delete-item" data-idx="${index}" title="Eliminar anuncio de este televisor" ${!isOwnerOrAdmin ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''}>🗑️</button>
         </div>
       `;
 
       tvPlaylistItemsContainer.appendChild(card);
+    });
+
+    // Acciones de Moderación: Aprobar y Rechazar (Admin)
+    tvPlaylistItemsContainer.querySelectorAll('.btn-approve-ad').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const itemId = e.currentTarget.getAttribute('data-id');
+        const targetTvId = e.currentTarget.getAttribute('data-tvid');
+        try {
+          const res = await apiFetch('/api/v1/devices/approve-ad', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ itemId, targetTvId })
+          });
+          const data = await res.json();
+          if (data.success) {
+            showToast('✅ ¡Anuncio aprobado y puesto al aire en el televisor!', '#10B981');
+            await loadDevicesFromBackend();
+          } else {
+            showToast(`⚠️ ${data.error || 'Error al aprobar'}`, '#EF4444');
+          }
+        } catch (err) {
+          showToast('⚠️ Error al comunicarse con el servidor.', '#EF4444');
+        }
+      });
+    });
+
+    tvPlaylistItemsContainer.querySelectorAll('.btn-reject-ad').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const itemId = e.currentTarget.getAttribute('data-id');
+        const targetTvId = e.currentTarget.getAttribute('data-tvid');
+        const reason = prompt("Indica el motivo del rechazo del anuncio (para el cliente):", "El contenido requiere ajustes o comprobante de pago");
+        if (reason !== null) {
+          try {
+            const res = await apiFetch('/api/v1/devices/reject-ad', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ itemId, targetTvId, reason })
+            });
+            const data = await res.json();
+            if (data.success) {
+              showToast('❌ Anuncio rechazado y retirado de la emisión.', '#EF4444');
+              await loadDevicesFromBackend();
+            } else {
+              showToast(`⚠️ ${data.error || 'Error al rechazar'}`, '#EF4444');
+            }
+          } catch (err) {
+            showToast('⚠️ Error al comunicarse con el servidor.', '#EF4444');
+          }
+        }
+      });
     });
 
     // Ajuste directo al hacer clic en cualquiera de las 7 opciones (5s, 10s, 15s, 20s, 30s, 45s, 60s)
@@ -1273,6 +1424,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const title = (inputAdTitle ? inputAdTitle.value.trim() : '') || "Nueva Publicidad";
       const duration = (inputAdDuration ? parseInt(inputAdDuration.value) : 15) || 15;
       const targetTvId = selectTargetTvModal ? selectTargetTvModal.value : currentSelectedTvId;
+      const clientName = (document.getElementById('input-ad-client-name')?.value || '').trim() || (currentUser?.company || currentUser?.name || 'Cliente');
+      const clientPhone = (document.getElementById('input-ad-client-phone')?.value || '').trim();
+      const validFrom = document.getElementById('input-ad-valid-from')?.value || null;
+      const validTo = document.getElementById('input-ad-valid-to')?.value || null;
 
       const targetTv = devices.find(d => d.id === targetTvId) || devices[0];
       if (!targetTv) return;
@@ -1295,6 +1450,10 @@ document.addEventListener('DOMContentLoaded', () => {
             mediaTag: currentDetectedTag,
             fileName: currentPendingFile ? currentPendingFile.name : 'foto.png',
             dataUrl: currentPendingDataUrl,
+            clientName: clientName,
+            clientPhone: clientPhone,
+            validFrom: validFrom,
+            validTo: validTo,
             replacePrevious: false
           })
         });
@@ -1311,7 +1470,11 @@ document.addEventListener('DOMContentLoaded', () => {
           saveDevices();
           setupSimulatorForTv(targetTv);
           closeUploadModal();
-          showToast(`🎉 ¡"${title}" subido al servidor! El televisor lo descargará y mostrará inmediatamente.`, '#10B981');
+          if (currentUser && currentUser.role === 'CLIENT') {
+            showToast(`📨 ¡"${title}" subido con éxito! Pendiente de aprobación administrativa antes de salir al aire.`, '#F59E0B');
+          } else {
+            showToast(`🎉 ¡"${title}" subido al servidor! El televisor lo descargará y mostrará inmediatamente.`, '#10B981');
+          }
         } else {
           throw new Error(resData.error || "Error al procesar la subida");
         }
@@ -1439,16 +1602,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const inputName = document.getElementById('input-device-name');
       const inputLocation = document.getElementById('input-device-location');
+      const inputTariff = document.getElementById('input-device-tariff');
+      const inputMaxSlots = document.getElementById('input-device-max-slots');
 
       const name = (inputName ? inputName.value.trim() : '') || "Mi Pantalla TV";
       const location = (inputLocation ? inputLocation.value.trim() : '') || "Sala Principal";
+      const tariff = (inputTariff ? inputTariff.value.trim() : '') || "$50.00 / mes";
+      const maxSlots = (inputMaxSlots ? parseInt(inputMaxSlots.value) : 10) || 10;
 
       // Autorizar en el backend servidor-local.js
       try {
         const response = await apiFetch('/api/v1/admin/authorize-pairing', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code: pin, name: name, location: location })
+          body: JSON.stringify({ code: pin, name: name, location: location, tariff: tariff, maxSlots: maxSlots })
         });
         const resData = await response.json();
         if (!resData.success) {
@@ -1621,7 +1788,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ================= GESTIÓN DE SESIÓN Y LOGIN ADMINISTRADOR =================
+  // ================= GESTIÓN DE SESIÓN Y LOGIN ADMINISTRADOR / ANUNCIANTE =================
   const formAdminLogin = document.getElementById('form-admin-login');
   if (formAdminLogin) {
     formAdminLogin.addEventListener('submit', async (e) => {
@@ -1650,9 +1817,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = await res.json();
         if (data.success && data.token) {
           localStorage.setItem('0media_auth_token', data.token);
+          if (data.user) {
+            currentUser = data.user;
+            applyUserRoleUI();
+          }
           if (passwordInput) passwordInput.value = '';
           closeLoginModal();
-          showToast('✅ ¡Bienvenido! Sesión iniciada con éxito.', '#10B981');
+          showToast(`✅ ¡Bienvenido, ${currentUser ? (currentUser.company || currentUser.name) : 'Usuario'}!`, '#10B981');
           await loadDevicesFromBackend();
         } else {
           if (errorAlert) {
@@ -1681,6 +1852,8 @@ document.addEventListener('DOMContentLoaded', () => {
         await apiFetch('/api/v1/admin/logout', { method: 'POST' });
       } catch (e) {}
       localStorage.removeItem('0media_auth_token');
+      currentUser = null;
+      applyUserRoleUI();
       showToast('🔒 Sesión cerrada.', '#64748B');
       openLoginModal();
     });
@@ -1690,10 +1863,200 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const res = await apiFetch('/api/v1/admin/auth-status');
       const data = await res.json();
-      if (data.authEnabled && !data.isAuthenticated) {
+      if (data.isAuthenticated && data.user) {
+        currentUser = data.user;
+        applyUserRoleUI();
+      } else if (data.authEnabled && !data.isAuthenticated) {
         openLoginModal();
       }
     } catch (e) {}
+  }
+
+  // ================= GESTIÓN DE CLIENTES / ANUNCIANTES (ADMIN EXCLUSIVO) =================
+  const usersModal = document.getElementById('users-modal');
+  const btnOpenUsersModal = document.getElementById('btn-open-users-modal');
+  const btnCloseUsersModal = document.getElementById('btn-close-users-modal');
+  const btnCloseUsersModalFooter = document.getElementById('btn-close-users-modal-footer');
+  const formCreateUser = document.getElementById('form-create-user');
+  const usersListContainer = document.getElementById('users-list-container');
+  const badgeUsersCount = document.getElementById('badge-users-count');
+
+  async function loadAndRenderUsers() {
+    if (!usersListContainer) return;
+    try {
+      usersListContainer.innerHTML = '<div style="color:var(--text-muted);font-size:0.85rem;padding:12px;text-align:center;">Cargando anunciantes...</div>';
+      const res = await apiFetch('/api/v1/admin/users');
+      const data = await res.json();
+      if (data.success && Array.isArray(data.users)) {
+        if (badgeUsersCount) badgeUsersCount.textContent = `${data.users.length} cliente${data.users.length === 1 ? '' : 's'}`;
+        if (data.users.length === 0) {
+          usersListContainer.innerHTML = `
+            <div style="text-align:center;padding:24px;color:var(--text-muted);font-size:0.85rem;border:1px dashed var(--border-subtle);border-radius:8px;">
+              Aún no has registrado clientes anunciantes. Usa el formulario de arriba para dar de alta al primero.
+            </div>
+          `;
+          return;
+        }
+
+        usersListContainer.innerHTML = '';
+        data.users.forEach(u => {
+          const item = document.createElement('div');
+          item.className = 'user-item-card';
+          item.innerHTML = `
+            <div class="user-item-info">
+              <div class="user-item-company">
+                <span>🏢 ${u.company || u.name}</span>
+                <span style="font-size:0.7rem;background:rgba(168,85,247,0.2);color:#C084FC;padding:2px 7px;border-radius:4px;">${u.role}</span>
+              </div>
+              <div class="user-item-meta">
+                <span>👤 Usuario: <strong>${u.username}</strong></span>
+                <span>• Contacto: ${u.name}</span>
+                ${u.phone ? `<span>• Tel: ${u.phone}</span>` : ''}
+                ${u.email ? `<span>• Correo: ${u.email}</span>` : ''}
+              </div>
+            </div>
+            <button class="btn btn-danger btn-delete-user" data-id="${u.id}" data-name="${u.company || u.username}" style="padding:6px 12px;font-size:0.75rem;">
+              <span>🗑️</span> Eliminar
+            </button>
+          `;
+          usersListContainer.appendChild(item);
+        });
+
+        usersListContainer.querySelectorAll('.btn-delete-user').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            const userId = e.currentTarget.getAttribute('data-id');
+            const userName = e.currentTarget.getAttribute('data-name');
+            if (confirm(`¿Estás seguro de que deseas eliminar la cuenta de "${userName}"?`)) {
+              try {
+                const delRes = await apiFetch('/api/v1/admin/users/delete', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ userId })
+                });
+                const delData = await delRes.json();
+                if (delData.success) {
+                  showToast(`🗑️ Cuenta de "${userName}" eliminada con éxito.`, '#EF4444');
+                  loadAndRenderUsers();
+                } else {
+                  showToast(`⚠️ Error: ${delData.error || 'No se pudo eliminar'}`, '#EF4444');
+                }
+              } catch (err) {
+                showToast('⚠️ Error al eliminar usuario.', '#EF4444');
+              }
+            }
+          });
+        });
+      }
+    } catch (err) {
+      usersListContainer.innerHTML = '<div style="color:#F87171;font-size:0.85rem;padding:12px;">Error al cargar lista de anunciantes.</div>';
+    }
+  }
+
+  if (btnOpenUsersModal) {
+    btnOpenUsersModal.addEventListener('click', () => {
+      if (usersModal) {
+        usersModal.classList.add('open');
+        loadAndRenderUsers();
+      }
+    });
+  }
+  if (btnCloseUsersModal) {
+    btnCloseUsersModal.addEventListener('click', () => {
+      if (usersModal) usersModal.classList.remove('open');
+    });
+  }
+  if (btnCloseUsersModalFooter) {
+    btnCloseUsersModalFooter.addEventListener('click', () => {
+      if (usersModal) usersModal.classList.remove('open');
+    });
+  }
+
+  if (formCreateUser) {
+    formCreateUser.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = (document.getElementById('input-new-user-username')?.value || '').trim();
+      const password = document.getElementById('input-new-user-password')?.value || '';
+      const company = (document.getElementById('input-new-user-company')?.value || '').trim();
+      const name = (document.getElementById('input-new-user-name')?.value || '').trim();
+      const email = (document.getElementById('input-new-user-email')?.value || '').trim();
+      const phone = (document.getElementById('input-new-user-phone')?.value || '').trim();
+
+      try {
+        const res = await apiFetch('/api/v1/admin/users/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password, company, name, email, phone })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`✅ ¡Cuenta para "${company}" creada con éxito!`, '#10B981');
+          formCreateUser.reset();
+          loadAndRenderUsers();
+        } else {
+          showToast(`⚠️ ${data.error || 'Error al crear cuenta'}`, '#EF4444');
+        }
+      } catch (err) {
+        showToast('⚠️ Error de conexión al crear usuario.', '#EF4444');
+      }
+    });
+  }
+
+  // ================= CONFIGURACIÓN DE PANTALLA Y TARIFAS (ADMIN) =================
+  const deviceSettingsModal = document.getElementById('device-settings-modal');
+  const btnCloseDeviceSettingsModal = document.getElementById('btn-close-device-settings-modal');
+  const btnCancelDeviceSettings = document.getElementById('btn-cancel-device-settings');
+  const formDeviceSettings = document.getElementById('form-device-settings');
+  const editDeviceSettingsId = document.getElementById('edit-device-settings-id');
+  const editDeviceName = document.getElementById('edit-device-name');
+  const editDeviceLocation = document.getElementById('edit-device-location');
+  const editDeviceTariff = document.getElementById('edit-device-tariff');
+  const editDeviceMaxSlots = document.getElementById('edit-device-max-slots');
+
+  function openDeviceSettingsModal(dev) {
+    if (!deviceSettingsModal || !dev) return;
+    if (editDeviceSettingsId) editDeviceSettingsId.value = dev.id;
+    if (editDeviceName) editDeviceName.value = dev.name || '';
+    if (editDeviceLocation) editDeviceLocation.value = dev.location || '';
+    if (editDeviceTariff) editDeviceTariff.value = dev.tariff || '$50.00 / mes';
+    if (editDeviceMaxSlots) editDeviceMaxSlots.value = dev.maxSlots || 10;
+    deviceSettingsModal.classList.add('open');
+  }
+
+  function closeDeviceSettingsModal() {
+    if (deviceSettingsModal) deviceSettingsModal.classList.remove('open');
+  }
+
+  if (btnCloseDeviceSettingsModal) btnCloseDeviceSettingsModal.addEventListener('click', closeDeviceSettingsModal);
+  if (btnCancelDeviceSettings) btnCancelDeviceSettings.addEventListener('click', closeDeviceSettingsModal);
+
+  if (formDeviceSettings) {
+    formDeviceSettings.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const deviceId = editDeviceSettingsId ? editDeviceSettingsId.value : null;
+      const name = (editDeviceName ? editDeviceName.value.trim() : '') || 'Pantalla TV';
+      const location = (editDeviceLocation ? editDeviceLocation.value.trim() : '') || 'Ubicación';
+      const tariff = (editDeviceTariff ? editDeviceTariff.value.trim() : '') || '$50.00 / mes';
+      const maxSlots = (editDeviceMaxSlots ? parseInt(editDeviceMaxSlots.value) : 10) || 10;
+
+      if (!deviceId) return;
+      try {
+        const res = await apiFetch('/api/v1/admin/update-device-settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deviceId, name, location, tariff, maxSlots })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`⚙️ Configuración y tarifa actualizadas para "${name}".`, '#10B981');
+          closeDeviceSettingsModal();
+          await loadDevicesFromBackend();
+        } else {
+          showToast(`⚠️ ${data.error || 'Error al actualizar'}`, '#EF4444');
+        }
+      } catch (err) {
+        showToast('⚠️ Error al conectar con el servidor.', '#EF4444');
+      }
+    });
   }
 
   // ================= 12. INICIALIZACIÓN COMPLETA =================
