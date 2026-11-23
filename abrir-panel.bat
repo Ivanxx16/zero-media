@@ -4,8 +4,8 @@ echo ===================================================================
 echo     0Media Digital Signage — Hub de Administracion y Control
 echo ===================================================================
 echo Abriendo el panel de control en tu navegador web...
-start "" "%~dp0frontend-web\index.html"
+start http://localhost:3000
 echo.
-echo Panel ejecutado con exito.
+echo Panel ejecutado con exito en http://localhost:3000
 echo.
 pause

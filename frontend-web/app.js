@@ -180,12 +180,16 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 8000);
-        const res = await fetch(url, {
+        const fetchOptions = {
           ...options,
           headers: headers,
-          credentials: 'include',
           signal: controller.signal
-        });
+        };
+        // En http/https usa same-origin para máxima compatibilidad sin bloqueo de CORS
+        if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+          fetchOptions.credentials = 'same-origin';
+        }
+        const res = await fetch(url, fetchOptions);
         clearTimeout(timeoutId);
 
         if (res.status === 401 && endpoint !== '/api/v1/admin/login' && endpoint !== '/api/v1/admin/auth-status') {

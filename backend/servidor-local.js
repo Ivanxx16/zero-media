@@ -677,10 +677,16 @@ function notifyDeviceRevoked(deviceId, reason = 'Desvinculado por el administrad
 
 // ================= 5. SERVIDOR HTTP PRINCIPAL =================
 const server = http.createServer((req, res) => {
-  // CORS & Seguridad
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // CORS & Seguridad Infalible (Soporta file://, localhost, IP local y dominios externos)
+  const origin = req.headers.origin;
+  if (origin && origin !== 'null') {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, DELETE, PUT');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-temp-token, x-device-id, x-hardware-fingerprint, x-device-model, If-None-Match, Range');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-temp-token, x-device-id, x-hardware-fingerprint, x-device-model, If-None-Match, Range, x-admin-secret');
   res.setHeader('Access-Control-Allow-Private-Network', 'true');
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
 
