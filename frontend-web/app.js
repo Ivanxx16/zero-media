@@ -13,7 +13,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const isSessionPaired = sessionStorage.getItem('0media_admin_session_paired') === 'true';
 
   // Recuperar estado previo solo de pantallas que estén vinculadas
-  const cached = localStorage.getItem('0media_devices_v4');
+  try {
+    localStorage.removeItem('0media_devices_v4');
+    localStorage.removeItem('0media_devices_v3');
+    localStorage.removeItem('0media_devices_v2');
+  } catch (e) {}
+  const cached = localStorage.getItem('0media_devices_v5');
   if (cached) {
     try {
       const parsed = JSON.parse(cached);
@@ -370,7 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function saveDevices() {
-    localStorage.setItem('0media_devices_v4', JSON.stringify(devices));
+    localStorage.setItem('0media_devices_v5', JSON.stringify(devices));
     renderDevices();
     updateStats();
     renderTvSelector();
