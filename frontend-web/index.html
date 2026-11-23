@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>0Media Digital Signage — Panel de Administración Central</title>
+  <title>Zero Media — Tu mejor alternativa para hacer Publicidad</title>
   <meta name="description" content="Centro de control maestro para gestión de pantallas Android TV y programación de campañas publicitarias independientes con videos, fotos y GIFs para 0Media Digital Signage.">
   <link rel="stylesheet" href="styles.css">
   <link rel="icon" type="image/png" href="assets/logo.png">
@@ -21,9 +21,15 @@
     </div>
 
     <nav class="sidebar-nav">
+      <!-- VISTA PRINCIPAL DE BIENVENIDA -->
+      <a class="nav-item active" href="#welcome" data-view="welcome" id="nav-welcome">
+        <span class="icon">🏠</span>
+        <span>Inicio Zero Media</span>
+      </a>
+
       <!-- OPCIONES DE ADMINISTRADOR -->
-      <div id="admin-nav-group">
-        <a class="nav-item active" href="#devices" data-view="devices" id="nav-devices">
+      <div id="admin-nav-group" style="display: none;">
+        <a class="nav-item" href="#devices" data-view="devices" id="nav-devices">
           <span class="icon">🖥️</span>
           <span>Pantallas en Vivo</span>
           <span class="badge-counter" id="badge-screen-count">0</span>
@@ -44,7 +50,7 @@
 
       <!-- OPCIONES DE USUARIO ANUNCIANTE -->
       <div id="user-nav-group" style="display: none;">
-        <a class="nav-item active" href="#user-portal" data-view="user-portal" id="nav-user-portal">
+        <a class="nav-item" href="#user-portal" data-view="user-portal" id="nav-user-portal">
           <span class="icon">📢</span>
           <span>Mi Pantalla y Publicidad</span>
         </a>
@@ -103,8 +109,97 @@
     <!-- CONTENT VIEWS -->
     <main class="content-area">
 
+      <!-- ================= VISTA 0: BIENVENIDOS A ZERO MEDIA ================= -->
+      <section class="view-section active" id="view-welcome">
+        <div class="welcome-hero-container">
+          <div class="welcome-glow-sphere"></div>
+
+          <div class="welcome-header">
+            <div class="welcome-badge">
+              <span class="welcome-badge-dot"></span>
+              <span>Red Inteligente de Publicidad Digital DOOH</span>
+            </div>
+
+            <h1 class="welcome-main-title">
+              Bienvenidos a <span class="gradient-text">Zero Media</span>
+            </h1>
+
+            <p class="welcome-tagline">
+              Tu mejor alternativa para hacer Publicidad
+            </p>
+
+            <p class="welcome-description">
+              Impulsa tu negocio con pantallas comerciales de alta visibilidad. Elige tu televisor, publica tus anuncios y llega a miles de personas en tiempo real.
+            </p>
+          </div>
+
+          <!-- 2 BOTONES PRINCIPALES DE ACCESO (ADMINISTRADOR Y USUARIO) -->
+          <div class="welcome-cards-grid">
+            <!-- TARJETA 1: ENTRAR COMO ADMINISTRADOR -->
+            <div class="welcome-access-card card-admin">
+              <div>
+                <div class="welcome-card-icon">👑</div>
+                <span class="welcome-card-badge admin-badge">Control Maestro</span>
+                <h3 class="welcome-card-title">Administrador</h3>
+                <p class="welcome-card-desc">
+                  Acceso exclusivo para vincular pantallas Android TV, fijar tarifas comerciales por ubicación y moderar/aprobar publicidades de clientes.
+                </p>
+                <ul class="welcome-card-features">
+                  <li><span>✓</span> Vincular televisores físicos con código PIN</li>
+                  <li><span>✓</span> Configurar tarifas y cupos por pantalla</li>
+                  <li><span>✓</span> Bandeja de aprobación de anuncios entrantes</li>
+                </ul>
+              </div>
+              <button class="btn btn-primary welcome-action-btn btn-admin-action" id="btn-welcome-admin">
+                <span>👑</span> Entrar como Administrador
+              </button>
+            </div>
+
+            <!-- TARJETA 2: ENTRAR COMO USUARIO -->
+            <div class="welcome-access-card card-user">
+              <div>
+                <div class="welcome-card-icon">📺</div>
+                <span class="welcome-card-badge user-badge">Publicidad para Clientes</span>
+                <h3 class="welcome-card-title">Usuario Anunciante</h3>
+                <p class="welcome-card-desc">
+                  Publica tus fotos, videos o GIFs en cualquier televisor de nuestra red comercial. Crea tu cuenta 100% web sin instalar ninguna aplicación.
+                </p>
+                <ul class="welcome-card-features">
+                  <li><span>✓</span> Catálogo de pantallas con tarifas y cupos</li>
+                  <li><span>✓</span> Registro web directo (sin necesidad de APK)</li>
+                  <li><span>✓</span> Contador de emisiones y métricas en vivo</li>
+                </ul>
+              </div>
+              <button class="btn btn-primary welcome-action-btn btn-user-action" id="btn-welcome-user">
+                <span>🎬</span> Entrar como Usuario
+              </button>
+            </div>
+          </div>
+
+          <!-- Métricas y Garantías de Zero Media -->
+          <div class="welcome-metrics-strip">
+            <div class="welcome-metric-item">
+              <div class="metric-num">100% Web</div>
+              <div class="metric-lbl">Sin APKs para anunciantes</div>
+            </div>
+            <div class="welcome-metric-item">
+              <div class="metric-num">Moderación 24/7</div>
+              <div class="metric-lbl">Control y aprobación comercial</div>
+            </div>
+            <div class="welcome-metric-item">
+              <div class="metric-num">Full HD / 4K</div>
+              <div class="metric-lbl">Fotos, videos y GIFs animados</div>
+            </div>
+            <div class="welcome-metric-item">
+              <div class="metric-num">Proof-of-Play</div>
+              <div class="metric-lbl">Registro de reproducciones al aire</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- ================= VISTA 1: PANTALLAS EN VIVO ================= -->
-      <section class="view-section active" id="view-devices">
+      <section class="view-section" id="view-devices">
         <!-- Top Stats Row -->
         <div class="stats-grid">
           <div class="stat-card">

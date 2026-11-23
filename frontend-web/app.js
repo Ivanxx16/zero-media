@@ -317,13 +317,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (inputClientPhone && currentUser.phone) {
           inputClientPhone.value = currentUser.phone;
         }
+        document.querySelectorAll('#btn-admin-logout').forEach(b => b.style.display = 'inline-flex');
         renderUserPortal();
       }
     } else {
-      if (roleIcon) roleIcon.textContent = '👤';
-      if (displayName) displayName.textContent = 'Sin Identificar';
-      if (adminNavGroup) adminNavGroup.style.display = 'block';
+      if (roleIcon) roleIcon.textContent = '👋';
+      if (displayName) displayName.textContent = 'Visitante';
+      if (sidebarAvatar) sidebarAvatar.textContent = 'ZM';
+      if (sidebarName) sidebarName.textContent = 'Zero Media';
+      if (sidebarRole) sidebarRole.textContent = 'Publicidad Digital';
+      if (adminNavGroup) adminNavGroup.style.display = 'none';
       if (userNavGroup) userNavGroup.style.display = 'none';
+      if (btnPairModal) btnPairModal.style.display = 'none';
+      if (btnRevokeSession) btnRevokeSession.style.display = 'none';
+      document.querySelectorAll('#btn-admin-logout').forEach(b => b.style.display = 'none');
     }
   }
 
@@ -386,6 +393,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ================= 4. NAVEGACIÓN Y RUTAS =================
   const titlesMap = {
+    welcome: "Bienvenidos a Zero Media — Tu mejor alternativa para hacer Publicidad",
     devices: "Pantallas en Vivo — Monitoreo en Tiempo Real",
     approvals: "Bandeja de Aprobación de Publicidades",
     playlists: "Lista de Campañas — Publicidad por Televisor",
@@ -393,9 +401,18 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   function switchView(targetView) {
-    // Si es usuario normal de TV, siempre anclar a su portal de anunciante
-    if (currentUser && currentUser.role === 'DEVICE_USER' && targetView !== 'user-portal') {
+    if (!targetView) {
+      targetView = currentUser ? (currentUser.role === 'ADMIN' ? 'devices' : 'user-portal') : 'welcome';
+    }
+
+    // Si es usuario normal de TV o cliente, no permitir ingresar a vistas de admin
+    if (currentUser && currentUser.role !== 'ADMIN' && (targetView === 'devices' || targetView === 'approvals' || targetView === 'playlists')) {
       targetView = 'user-portal';
+    }
+
+    // Si no está autenticado y trata de ir a vistas privadas sin login, enviar a welcome
+    if (!currentUser && targetView !== 'welcome') {
+      targetView = 'welcome';
     }
 
     navItems.forEach(nav => {
@@ -433,14 +450,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function handleHash() {
     const hash = window.location.hash.replace('#', '');
-    if (hash === 'approvals') {
+    if (hash === 'welcome') {
+      switchView('welcome');
+    } else if (hash === 'approvals') {
       switchView('approvals');
     } else if (hash === 'playlists') {
       switchView('playlists');
     } else if (hash === 'user-portal') {
       switchView('user-portal');
+    } else if (hash === 'devices') {
+      switchView('devices');
     } else {
-      switchView(currentUser && currentUser.role === 'DEVICE_USER' ? 'user-portal' : 'devices');
+      switchView(currentUser ? (currentUser.role === 'ADMIN' ? 'devices' : 'user-portal') : 'welcome');
     }
   }
 
@@ -2205,9 +2226,27 @@ document.addEventListener('DOMContentLoaded', () => {
       currentUser = null;
       applyUserRoleUI();
       showToast('🔒 Sesión cerrada.', '#64748B');
-      openLoginModal();
+      switchView('welcome');
     });
   });
+
+  // ================= BOTONES DE LA VISTA DE BIENVENIDA ZERO MEDIA =================
+  const btnWelcomeAdmin = document.getElementById('btn-welcome-admin');
+  const btnWelcomeUser = document.getElementById('btn-welcome-user');
+
+  if (btnWelcomeAdmin) {
+    btnWelcomeAdmin.addEventListener('click', () => {
+      openLoginModal();
+      if (tabLoginAdmin) tabLoginAdmin.click();
+    });
+  }
+
+  if (btnWelcomeUser) {
+    btnWelcomeUser.addEventListener('click', () => {
+      openLoginModal();
+      if (tabLoginUser) tabLoginUser.click();
+    });
+  }
 
   // ================= BANDEJA DE APROBACIONES PENDIENTES (ADMIN EXCLUSIVO) =================
   const pendingApprovalsContainer = document.getElementById('pending-approvals-container');
@@ -2698,10 +2737,25 @@ document.addEventListener('DOMContentLoaded', () => {
       if (data.isAuthenticated && data.user) {
         currentUser = data.user;
         applyUserRoleUI();
-      } else if (data.authEnabled && !data.isAuthenticated) {
-        openLoginModal();
+        if (!window.location.hash || window.location.hash === '#welcome') {
+          switchView(currentUser.role === 'ADMIN' ? 'devices' : 'user-portal');
+        } else {
+          handleHash();
+        }
+      } else {
+        currentUser = null;
+        applyUserRoleUI();
+        if (!window.location.hash) {
+          switchView('welcome');
+        } else {
+          handleHash();
+        }
       }
-    } catch (e) {}
+    } catch (e) {
+      currentUser = null;
+      applyUserRoleUI();
+      switchView('welcome');
+    }
   }
 
   // ================= CONFIGURACIÓN DE PANTALLA Y TARIFAS (ADMIN) =================
@@ -2785,7 +2839,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (window.location.hash) {
     handleHash();
   } else {
-    switchView(currentUser && (currentUser.role === 'DEVICE_USER' || currentUser.role === 'CLIENT') ? 'user-portal' : 'devices');
+    switchView(currentUser ? (currentUser.role === 'ADMIN' ? 'devices' : 'user-portal') : 'welcome');
   }
 
 });
