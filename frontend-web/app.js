@@ -224,7 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (currentUser.role === 'ADMIN') {
         if (roleIcon) roleIcon.textContent = '👑';
         if (displayName) displayName.textContent = 'Admin Maestro';
-        if (btnUsersModal) btnUsersModal.style.display = 'inline-flex';
+        if (btnUsersModal) btnUsersModal.style.display = 'none';
         if (btnPairModal) btnPairModal.style.display = 'inline-flex';
         if (btnRevokeSession) btnRevokeSession.style.display = 'inline-flex';
         if (uploadNotice) uploadNotice.style.display = 'none';
@@ -233,15 +233,15 @@ document.addEventListener('DOMContentLoaded', () => {
           inputClientName.readOnly = false;
         }
       } else {
-        // Rol CLIENT
-        if (roleIcon) roleIcon.textContent = '🏢';
-        if (displayName) displayName.textContent = currentUser.company || currentUser.name || currentUser.username;
+        // Rol DEVICE_USER o CLIENT
+        if (roleIcon) roleIcon.textContent = '📺';
+        if (displayName) displayName.textContent = currentUser.deviceName ? `${currentUser.deviceName} (${currentUser.username})` : (currentUser.company || currentUser.username);
         if (btnUsersModal) btnUsersModal.style.display = 'none';
         if (btnPairModal) btnPairModal.style.display = 'none';
         if (btnRevokeSession) btnRevokeSession.style.display = 'none';
         if (uploadNotice) uploadNotice.style.display = 'block';
         if (inputClientName) {
-          inputClientName.value = currentUser.company || currentUser.name || '';
+          inputClientName.value = currentUser.deviceName || currentUser.company || currentUser.name || currentUser.username;
           inputClientName.readOnly = true;
         }
         if (inputClientPhone && currentUser.phone) {
@@ -427,6 +427,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div style="display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap;">
               <span class="device-tariff-badge">💵 ${device.tariff || '$50.00 / mes'}</span>
               <span class="device-slots-badge">📊 Cupos: ${(device.items || []).length} / ${device.maxSlots || 10}</span>
+              ${isAdmin ? `<span class="device-user-badge" style="font-size:0.75rem; background:rgba(99,102,241,0.18); color:#A5B4FC; padding:2px 8px; border-radius:12px; border:1px solid rgba(99,102,241,0.3);">👤 Acceso: <strong>${device.tvUser || 'Solo Admin'}</strong></span>` : ''}
             </div>
           </div>
           ${statusBadgeHtml}
@@ -1626,18 +1627,22 @@ document.addEventListener('DOMContentLoaded', () => {
       const inputLocation = document.getElementById('input-device-location');
       const inputTariff = document.getElementById('input-device-tariff');
       const inputMaxSlots = document.getElementById('input-device-max-slots');
+      const inputUser = document.getElementById('input-device-user');
+      const inputPass = document.getElementById('input-device-pass');
 
       const name = (inputName ? inputName.value.trim() : '') || "Mi Pantalla TV";
       const location = (inputLocation ? inputLocation.value.trim() : '') || "Sala Principal";
       const tariff = (inputTariff ? inputTariff.value.trim() : '') || "$50.00 / mes";
       const maxSlots = (inputMaxSlots ? parseInt(inputMaxSlots.value) : 10) || 10;
+      const tvUser = inputUser ? inputUser.value.trim() : '';
+      const tvPassword = inputPass ? inputPass.value : '';
 
       // Autorizar en el backend servidor-local.js
       try {
         const response = await apiFetch('/api/v1/admin/authorize-pairing', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code: pin, name: name, location: location, tariff: tariff, maxSlots: maxSlots })
+          body: JSON.stringify({ code: pin, name, location, tariff, maxSlots, tvUser, tvPassword })
         });
         const resData = await response.json();
         if (!resData.success) {
@@ -1894,135 +1899,6 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (e) {}
   }
 
-  // ================= GESTIÓN DE CLIENTES / ANUNCIANTES (ADMIN EXCLUSIVO) =================
-  const usersModal = document.getElementById('users-modal');
-  const btnOpenUsersModal = document.getElementById('btn-open-users-modal');
-  const btnCloseUsersModal = document.getElementById('btn-close-users-modal');
-  const btnCloseUsersModalFooter = document.getElementById('btn-close-users-modal-footer');
-  const formCreateUser = document.getElementById('form-create-user');
-  const usersListContainer = document.getElementById('users-list-container');
-  const badgeUsersCount = document.getElementById('badge-users-count');
-
-  async function loadAndRenderUsers() {
-    if (!usersListContainer) return;
-    try {
-      usersListContainer.innerHTML = '<div style="color:var(--text-muted);font-size:0.85rem;padding:12px;text-align:center;">Cargando anunciantes...</div>';
-      const res = await apiFetch('/api/v1/admin/users');
-      const data = await res.json();
-      if (data.success && Array.isArray(data.users)) {
-        if (badgeUsersCount) badgeUsersCount.textContent = `${data.users.length} cliente${data.users.length === 1 ? '' : 's'}`;
-        if (data.users.length === 0) {
-          usersListContainer.innerHTML = `
-            <div style="text-align:center;padding:24px;color:var(--text-muted);font-size:0.85rem;border:1px dashed var(--border-subtle);border-radius:8px;">
-              Aún no has registrado clientes anunciantes. Usa el formulario de arriba para dar de alta al primero.
-            </div>
-          `;
-          return;
-        }
-
-        usersListContainer.innerHTML = '';
-        data.users.forEach(u => {
-          const item = document.createElement('div');
-          item.className = 'user-item-card';
-          item.innerHTML = `
-            <div class="user-item-info">
-              <div class="user-item-company">
-                <span>🏢 ${u.company || u.name}</span>
-                <span style="font-size:0.7rem;background:rgba(168,85,247,0.2);color:#C084FC;padding:2px 7px;border-radius:4px;">${u.role}</span>
-              </div>
-              <div class="user-item-meta">
-                <span>👤 Usuario: <strong>${u.username}</strong></span>
-                <span>• Contacto: ${u.name}</span>
-                ${u.phone ? `<span>• Tel: ${u.phone}</span>` : ''}
-                ${u.email ? `<span>• Correo: ${u.email}</span>` : ''}
-              </div>
-            </div>
-            <button class="btn btn-danger btn-delete-user" data-id="${u.id}" data-name="${u.company || u.username}" style="padding:6px 12px;font-size:0.75rem;">
-              <span>🗑️</span> Eliminar
-            </button>
-          `;
-          usersListContainer.appendChild(item);
-        });
-
-        usersListContainer.querySelectorAll('.btn-delete-user').forEach(btn => {
-          btn.addEventListener('click', async (e) => {
-            const userId = e.currentTarget.getAttribute('data-id');
-            const userName = e.currentTarget.getAttribute('data-name');
-            if (confirm(`¿Estás seguro de que deseas eliminar la cuenta de "${userName}"?`)) {
-              try {
-                const delRes = await apiFetch('/api/v1/admin/users/delete', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ userId })
-                });
-                const delData = await delRes.json();
-                if (delData.success) {
-                  showToast(`🗑️ Cuenta de "${userName}" eliminada con éxito.`, '#EF4444');
-                  loadAndRenderUsers();
-                } else {
-                  showToast(`⚠️ Error: ${delData.error || 'No se pudo eliminar'}`, '#EF4444');
-                }
-              } catch (err) {
-                showToast('⚠️ Error al eliminar usuario.', '#EF4444');
-              }
-            }
-          });
-        });
-      }
-    } catch (err) {
-      usersListContainer.innerHTML = '<div style="color:#F87171;font-size:0.85rem;padding:12px;">Error al cargar lista de anunciantes.</div>';
-    }
-  }
-
-  if (btnOpenUsersModal) {
-    btnOpenUsersModal.addEventListener('click', () => {
-      if (usersModal) {
-        usersModal.classList.add('open');
-        loadAndRenderUsers();
-      }
-    });
-  }
-  if (btnCloseUsersModal) {
-    btnCloseUsersModal.addEventListener('click', () => {
-      if (usersModal) usersModal.classList.remove('open');
-    });
-  }
-  if (btnCloseUsersModalFooter) {
-    btnCloseUsersModalFooter.addEventListener('click', () => {
-      if (usersModal) usersModal.classList.remove('open');
-    });
-  }
-
-  if (formCreateUser) {
-    formCreateUser.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const username = (document.getElementById('input-new-user-username')?.value || '').trim();
-      const password = document.getElementById('input-new-user-password')?.value || '';
-      const company = (document.getElementById('input-new-user-company')?.value || '').trim();
-      const name = (document.getElementById('input-new-user-name')?.value || '').trim();
-      const email = (document.getElementById('input-new-user-email')?.value || '').trim();
-      const phone = (document.getElementById('input-new-user-phone')?.value || '').trim();
-
-      try {
-        const res = await apiFetch('/api/v1/admin/users/create', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password, company, name, email, phone })
-        });
-        const data = await res.json();
-        if (data.success) {
-          showToast(`✅ ¡Cuenta para "${company}" creada con éxito!`, '#10B981');
-          formCreateUser.reset();
-          loadAndRenderUsers();
-        } else {
-          showToast(`⚠️ ${data.error || 'Error al crear cuenta'}`, '#EF4444');
-        }
-      } catch (err) {
-        showToast('⚠️ Error de conexión al crear usuario.', '#EF4444');
-      }
-    });
-  }
-
   // ================= CONFIGURACIÓN DE PANTALLA Y TARIFAS (ADMIN) =================
   const deviceSettingsModal = document.getElementById('device-settings-modal');
   const btnCloseDeviceSettingsModal = document.getElementById('btn-close-device-settings-modal');
@@ -2033,6 +1909,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const editDeviceLocation = document.getElementById('edit-device-location');
   const editDeviceTariff = document.getElementById('edit-device-tariff');
   const editDeviceMaxSlots = document.getElementById('edit-device-max-slots');
+  const editDeviceUser = document.getElementById('edit-device-user');
+  const editDevicePass = document.getElementById('edit-device-pass');
 
   function openDeviceSettingsModal(dev) {
     if (!deviceSettingsModal || !dev) return;
@@ -2041,6 +1919,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (editDeviceLocation) editDeviceLocation.value = dev.location || '';
     if (editDeviceTariff) editDeviceTariff.value = dev.tariff || '$50.00 / mes';
     if (editDeviceMaxSlots) editDeviceMaxSlots.value = dev.maxSlots || 10;
+    if (editDeviceUser) editDeviceUser.value = dev.tvUser || '';
+    if (editDevicePass) editDevicePass.value = '';
     deviceSettingsModal.classList.add('open');
   }
 
@@ -2059,17 +1939,19 @@ document.addEventListener('DOMContentLoaded', () => {
       const location = (editDeviceLocation ? editDeviceLocation.value.trim() : '') || 'Ubicación';
       const tariff = (editDeviceTariff ? editDeviceTariff.value.trim() : '') || '$50.00 / mes';
       const maxSlots = (editDeviceMaxSlots ? parseInt(editDeviceMaxSlots.value) : 10) || 10;
+      const tvUser = editDeviceUser ? editDeviceUser.value.trim() : '';
+      const tvPassword = editDevicePass ? editDevicePass.value : '';
 
       if (!deviceId) return;
       try {
         const res = await apiFetch('/api/v1/admin/update-device-settings', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ deviceId, name, location, tariff, maxSlots })
+          body: JSON.stringify({ deviceId, name, location, tariff, maxSlots, tvUser, tvPassword })
         });
         const data = await res.json();
         if (data.success) {
-          showToast(`⚙️ Configuración y tarifa actualizadas para "${name}".`, '#10B981');
+          showToast(`⚙️ Configuración y acceso de pantalla actualizados para "${name}".`, '#10B981');
           closeDeviceSettingsModal();
           await loadDevicesFromBackend();
         } else {

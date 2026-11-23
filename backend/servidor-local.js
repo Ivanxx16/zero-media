@@ -360,6 +360,8 @@ try {
   // Migraciones automáticas no destructivas
   try { sqliteDb.exec("ALTER TABLE devices ADD COLUMN tariff TEXT;"); } catch (e) {}
   try { sqliteDb.exec("ALTER TABLE devices ADD COLUMN max_slots INTEGER DEFAULT 10;"); } catch (e) {}
+  try { sqliteDb.exec("ALTER TABLE devices ADD COLUMN tv_user TEXT;"); } catch (e) {}
+  try { sqliteDb.exec("ALTER TABLE devices ADD COLUMN tv_password_hash TEXT;"); } catch (e) {}
   try { sqliteDb.exec("ALTER TABLE global_items ADD COLUMN owner_id TEXT;"); } catch (e) {}
   try { sqliteDb.exec("ALTER TABLE global_items ADD COLUMN client_name TEXT;"); } catch (e) {}
   try { sqliteDb.exec("ALTER TABLE global_items ADD COLUMN valid_from TEXT;"); } catch (e) {}
@@ -428,7 +430,9 @@ function loadState() {
           lastInitiated: row.last_initiated,
           lastPairedAt: row.last_paired_at,
           tariff: row.tariff || '',
-          maxSlots: row.max_slots || 10
+          maxSlots: row.max_slots || 10,
+          tvUser: row.tv_user || '',
+          tvPasswordHash: row.tv_password_hash || ''
         }));
 
         state.customItems = itemRows.map(row => ({
@@ -506,9 +510,9 @@ function saveState() {
           id, fingerprint, name, location, model, resolution, ip, status,
           pairing_code, is_paired, has_been_paired, temp_token, permanent_token,
           tenant_id, ram_usage, free_disk, temp, campaign_name, device_info,
-          items, last_initiated, last_paired_at, tariff, max_slots, updated_at
+          items, last_initiated, last_paired_at, tariff, max_slots, tv_user, tv_password_hash, updated_at
         ) VALUES (
-          ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+          ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
         )
       `);
 
@@ -520,7 +524,8 @@ function saveState() {
           d.pairingCode, d.isPaired ? 1 : 0, d.hasBeenPaired ? 1 : 0, d.tempToken, d.permanentToken,
           d.tenantId, d.ramUsage, d.freeDisk, d.temp, d.campaignName,
           JSON.stringify(d.deviceInfo || {}), JSON.stringify(d.items || []),
-          d.lastInitiated || 0, d.lastPairedAt || 0, d.tariff || '', parseInt(d.maxSlots, 10) || 10, Date.now()
+          d.lastInitiated || 0, d.lastPairedAt || 0, d.tariff || '', parseInt(d.maxSlots, 10) || 10,
+          d.tvUser || '', d.tvPasswordHash || '', Date.now()
         );
       }
 
@@ -925,7 +930,42 @@ const server = http.createServer((req, res) => {
         return;
       }
 
-      // 2. Probar credenciales de Clientes / Anunciantes
+      // 2. Probar credenciales asignadas a cada Televisor vinculado (DEVICE_USER)
+      const matchedDevice = (state.devices || []).find(d => 
+        (d.isPaired || d.hasBeenPaired) &&
+        d.tvUser &&
+        d.tvUser.toLowerCase() === username.toLowerCase() &&
+        d.tvPasswordHash &&
+        verifyPassword(password, d.tvPasswordHash)
+      );
+
+      if (matchedDevice) {
+        const deviceUser = {
+          id: `user_${matchedDevice.id}`,
+          username: matchedDevice.tvUser,
+          name: `Usuario de ${matchedDevice.name}`,
+          company: matchedDevice.location ? `${matchedDevice.name} (${matchedDevice.location})` : matchedDevice.name,
+          role: 'DEVICE_USER',
+          assignedDeviceId: matchedDevice.id,
+          deviceName: matchedDevice.name,
+          deviceLocation: matchedDevice.location
+        };
+        const { token, expiresAt } = createSession(deviceUser);
+        console.log(`[AUTH] Inicio de sesión exitoso como USUARIO DE TELEVISOR para "${username}" en pantalla "${matchedDevice.name}" desde IP ${clientIp}.`);
+        res.writeHead(200, {
+          'Content-Type': 'application/json',
+          'Set-Cookie': `0media_session=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=604800`
+        });
+        res.end(JSON.stringify({
+          success: true,
+          token: token,
+          user: deviceUser,
+          expiresAt: expiresAt
+        }));
+        return;
+      }
+
+      // 3. Probar credenciales de Clientes / Anunciantes registrados previamente
       const clientUser = (state.users || []).find(u => 
         (u.username.toLowerCase() === username.toLowerCase() || (u.email && u.email.toLowerCase() === username.toLowerCase())) &&
         u.isActive !== false
@@ -1135,6 +1175,10 @@ const server = http.createServer((req, res) => {
       if (data.location) dev.location = data.location.trim();
       if (data.tariff !== undefined) dev.tariff = String(data.tariff).trim();
       if (data.maxSlots !== undefined) dev.maxSlots = Math.max(1, parseInt(data.maxSlots, 10) || 10);
+      if (data.tvUser !== undefined) dev.tvUser = String(data.tvUser).trim();
+      if (data.tvPassword && String(data.tvPassword).trim()) {
+        dev.tvPasswordHash = hashPassword(String(data.tvPassword).trim());
+      }
 
       saveState();
       console.log(`[DEVICE SETTINGS] Pantalla "${dev.name}": Tarifa=${dev.tariff}, Ubicación=${dev.location}, Cupos=${dev.maxSlots}.`);
@@ -1433,6 +1477,10 @@ const server = http.createServer((req, res) => {
       if (data.location) targetDevice.location = data.location.trim();
       if (data.tariff !== undefined) targetDevice.tariff = String(data.tariff).trim();
       if (data.maxSlots !== undefined) targetDevice.maxSlots = Math.max(1, parseInt(data.maxSlots, 10) || 10);
+      if (data.tvUser) targetDevice.tvUser = String(data.tvUser).trim();
+      if (data.tvPassword && String(data.tvPassword).trim()) {
+        targetDevice.tvPasswordHash = hashPassword(String(data.tvPassword).trim());
+      }
       if (!Array.isArray(targetDevice.items)) targetDevice.items = [];
 
       state.manifestVersion = "v" + Date.now();
@@ -1519,6 +1567,29 @@ const server = http.createServer((req, res) => {
       });
     };
 
+    if (authUser.role === 'DEVICE_USER') {
+      // Filtrar para el usuario del televisor: SOLO ve su televisor asignado
+      const myDevice = pairedDevices.find(d => d.id === authUser.assignedDeviceId);
+      const userDevices = myDevice ? [{
+        ...myDevice,
+        tvUser: myDevice.tvUser || '',
+        hasTvPassword: Boolean(myDevice.tvPasswordHash),
+        tvPasswordHash: undefined,
+        items: enrichItems(myDevice.items || []),
+        tariff: myDevice.tariff || '',
+        maxSlots: parseInt(myDevice.maxSlots, 10) || 10
+      }] : [];
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: true,
+        devices: userDevices,
+        role: 'DEVICE_USER',
+        user: authUser
+      }));
+      return;
+    }
+
     if (authUser.role === 'CLIENT') {
       // Filtrar para el cliente: solo ve las pantallas asignadas o todas si '*',
       // y en device.items SOLO ve sus propios anuncios (no puede ver los de otros clientes)
@@ -1532,6 +1603,7 @@ const server = http.createServer((req, res) => {
           const maxSlots = parseInt(d.maxSlots, 10) || 10;
           return {
             ...d,
+            tvPasswordHash: undefined,
             items: myItems, // Solo ve sus anuncios
             totalActiveAds: totalApproved,
             maxSlots: maxSlots,
@@ -1553,6 +1625,9 @@ const server = http.createServer((req, res) => {
     // Rol ADMIN: ve todas las pantallas y todos los anuncios con sus métricas y clientes
     const adminDevices = pairedDevices.map(d => ({
       ...d,
+      tvUser: d.tvUser || '',
+      hasTvPassword: Boolean(d.tvPasswordHash),
+      tvPasswordHash: undefined,
       items: enrichItems(d.items || []),
       tariff: d.tariff || '',
       maxSlots: parseInt(d.maxSlots, 10) || 10
@@ -1587,11 +1662,18 @@ const server = http.createServer((req, res) => {
           return;
         }
 
+        let effectiveTargetTvId = targetTvId;
+        if (authUser.role === 'DEVICE_USER') {
+          effectiveTargetTvId = authUser.assignedDeviceId;
+        }
+
         const isClient = authUser.role === 'CLIENT';
-        const ownerId = isClient ? authUser.id : 'admin';
-        const finalClientName = isClient ? (authUser.company || authUser.name) : (clientName || 'Institucional 0Media').trim();
-        const finalClientPhone = isClient ? (authUser.phone || '') : (clientPhone || '').trim();
-        const approvalStatus = isClient ? 'PENDING' : 'APPROVED'; // Si es cliente queda en revisión; si es admin se aprueba directo
+        const isDeviceUser = authUser.role === 'DEVICE_USER';
+        const isRestricted = isClient || isDeviceUser;
+        const ownerId = isRestricted ? authUser.id : 'admin';
+        const finalClientName = isRestricted ? (authUser.company || authUser.name) : (clientName || 'Institucional 0Media').trim();
+        const finalClientPhone = isRestricted ? (authUser.phone || '') : (clientPhone || '').trim();
+        const approvalStatus = isRestricted ? 'PENDING' : 'APPROVED'; // Si es cliente/usuario TV queda en revisión; si es admin se aprueba directo
 
         const base64Data = dataUrl.replace(/^data:[^;]+;base64,/, "");
         const fileBuffer = Buffer.from(base64Data, 'base64');
@@ -1629,8 +1711,21 @@ const server = http.createServer((req, res) => {
         const sizeKb = Math.round(fileSize / 1024);
         const sizeText = sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`;
 
-        const isGlobalBroadcast = !targetTvId || targetTvId === 'ALL' || targetTvId === 'all';
-        const targetDevice = isGlobalBroadcast ? null : state.devices.find(d => d.id === targetTvId);
+        const isGlobalBroadcast = !effectiveTargetTvId || effectiveTargetTvId === 'ALL' || effectiveTargetTvId === 'all';
+        const targetDevice = isGlobalBroadcast ? null : state.devices.find(d => d.id === effectiveTargetTvId);
+
+        if (targetDevice && targetDevice.maxSlots) {
+          const currentCount = (targetDevice.items || []).filter(x => x.isEnabled !== false).length;
+          const maxAllowed = parseInt(targetDevice.maxSlots, 10) || 10;
+          if (currentCount >= maxAllowed) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              success: false,
+              error: `El televisor "${targetDevice.name}" ha completado su cupo comercial de ${maxAllowed} publicidades.`
+            }));
+            return;
+          }
+        }
 
         const newItem = {
           id: itemId,
@@ -1723,8 +1818,14 @@ const server = http.createServer((req, res) => {
       const itemId = data.itemId;
       const targetTvId = data.targetTvId;
 
-      // Seguridad: Clientes solo pueden alterar sus propios anuncios
-      if (authUser.role === 'CLIENT') {
+      // Seguridad: Clientes o usuarios de televisor solo pueden alterar sus propios anuncios
+      if (authUser.role === 'DEVICE_USER') {
+        if (targetTvId && targetTvId !== authUser.assignedDeviceId) {
+          res.writeHead(403, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: "No tienes permiso para pausar anuncios de otro televisor." }));
+          return;
+        }
+      } else if (authUser.role === 'CLIENT') {
         const dev = targetTvId ? state.devices.find(d => d.id === targetTvId) : null;
         const it = dev?.items?.find(x => x.id === itemId) || state.customItems?.find(x => x.id === itemId);
         if (it && it.ownerId !== authUser.id) {
@@ -1777,8 +1878,14 @@ const server = http.createServer((req, res) => {
       const { itemId, durationSeconds, applyToAll, targetTvId } = data;
       const parsedSeconds = Math.max(1, parseInt(durationSeconds, 10) || 15);
 
-      // Seguridad: Clientes solo pueden alterar la duración de sus propios anuncios
-      if (authUser.role === 'CLIENT') {
+      // Seguridad: Clientes o usuarios de televisor solo pueden alterar la duración de sus propios anuncios
+      if (authUser.role === 'DEVICE_USER') {
+        if (targetTvId && targetTvId !== authUser.assignedDeviceId) {
+          res.writeHead(403, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: "No tienes permiso para modificar anuncios de otro televisor." }));
+          return;
+        }
+      } else if (authUser.role === 'CLIENT') {
         const dev = targetTvId ? state.devices.find(d => d.id === targetTvId) : null;
         const it = dev?.items?.find(x => x.id === itemId) || state.customItems?.find(x => x.id === itemId);
         if (it && it.ownerId !== authUser.id) {
@@ -1922,8 +2029,14 @@ const server = http.createServer((req, res) => {
       const itemId = data.itemId;
       const targetTvId = data.targetTvId;
 
-      // Seguridad: Si es cliente, verificar que el anuncio le pertenezca
-      if (authUser.role === 'CLIENT') {
+      // Seguridad: Si es cliente o usuario de televisor, verificar permisos
+      if (authUser.role === 'DEVICE_USER') {
+        if (targetTvId && targetTvId !== authUser.assignedDeviceId) {
+          res.writeHead(403, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: "No tienes permiso para eliminar anuncios de otro televisor." }));
+          return;
+        }
+      } else if (authUser.role === 'CLIENT') {
         let isOwner = false;
         if (targetTvId) {
           const dev = state.devices.find(d => d.id === targetTvId);

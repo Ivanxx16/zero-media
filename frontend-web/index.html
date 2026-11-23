@@ -75,11 +75,6 @@
           <span>🚪</span> Salir
         </button>
 
-        <!-- Botón exclusivo Admin: Gestión de Anunciantes -->
-        <button class="btn btn-secondary" id="btn-open-users-modal" title="Gestionar Cuentas de Anunciantes y Clientes" style="border-color: rgba(168, 85, 247, 0.4); color: #C084FC;">
-          <span>👥</span> Anunciantes
-        </button>
-
         <button class="btn btn-secondary" id="btn-revoke-session" title="Cerrar vinculación de pantalla para volver a pedir código o escanear QR" style="border-color: rgba(239, 68, 68, 0.4); color: #EF4444;">
           <span>🔒</span> Desvincular / Pedir Código
         </button>
@@ -389,6 +384,18 @@
               <input type="number" id="input-device-max-slots" class="form-input" min="1" max="50" value="10">
             </div>
           </div>
+
+          <!-- CREDENCIALES DE ACCESO DEL USUARIO PARA ESTE TV -->
+          <div class="form-group-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px;">
+            <div class="form-group">
+              <label class="form-label" for="input-device-user">👤 Usuario de este TV (opcional):</label>
+              <input type="text" id="input-device-user" class="form-input" placeholder="ej. cliente_pizzeria" autocomplete="off">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="input-device-pass">🔑 Contraseña de acceso:</label>
+              <input type="password" id="input-device-pass" class="form-input" placeholder="••••••••" autocomplete="new-password">
+            </div>
+          </div>
         </div>
 
         <div class="modal-footer" style="padding: 10px 18px;">
@@ -563,7 +570,7 @@
     </div>
   </div>
 
-  <!-- ================= MODAL: INICIO DE SESIÓN ADMINISTRADOR / ANUNCIANTE ================= -->
+  <!-- ================= MODAL: INICIO DE SESIÓN ADMINISTRADOR / USUARIO TV ================= -->
   <div class="modal-backdrop" id="login-modal" style="z-index: 99999;">
     <div class="modal-window" style="max-width: 420px; border-color: rgba(37, 99, 235, 0.4); box-shadow: 0 20px 40px rgba(0,0,0,0.8), 0 0 25px rgba(37,99,235,0.25);">
       <div class="modal-header" style="display: flex; align-items: center; justify-content: space-between; position: relative;">
@@ -575,7 +582,7 @@
       <form id="form-admin-login">
         <div class="modal-body" style="gap: 16px;">
           <p style="font-size: 0.84rem; color: var(--text-muted); text-align: center; margin: 0;">
-            Ingresa tus credenciales de <strong>Administrador</strong> o <strong>Anunciante</strong> para acceder al control de tus pantallas y publicidad.
+            Ingresa con tu cuenta de <strong>Administrador Maestro</strong> o con el <strong>Usuario de tu Televisor</strong> para gestionar exclusivamente su contenido publicitario.
           </p>
 
           <div id="login-error-alert" style="display: none; padding: 10px 14px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 8px; color: #FCA5A5; font-size: 0.82rem;">
@@ -583,8 +590,8 @@
           </div>
 
           <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
-            <label class="form-label" style="font-size: 0.82rem; color: var(--text-muted);">Usuario o Correo Electrónico</label>
-            <input type="text" id="login-username" class="form-input" placeholder="admin o tu_usuario" value="admin" required autocomplete="username" style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 10px 12px; border-radius: 6px; font-size: 0.9rem;">
+            <label class="form-label" style="font-size: 0.82rem; color: var(--text-muted);">Usuario o Identificador</label>
+            <input type="text" id="login-username" class="form-input" placeholder="admin o usuario_del_tv" value="admin" required autocomplete="username" style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 10px 12px; border-radius: 6px; font-size: 0.9rem;">
           </div>
 
           <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
@@ -599,84 +606,6 @@
           </button>
         </div>
       </form>
-    </div>
-  </div>
-
-  <!-- ================= MODAL: GESTIÓN DE ANUNCIANTES (ADMIN EXCLUSIVO) ================= -->
-  <div class="modal-backdrop" id="users-modal">
-    <div class="modal-window" style="max-width: 680px;">
-      <div class="modal-header">
-        <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
-          <span>👥</span> Cuentas de Anunciantes y Clientes
-        </h3>
-        <button class="modal-close-btn" id="btn-close-users-modal">&times;</button>
-      </div>
-
-      <div class="modal-body" style="gap: 20px; max-height: 75vh; overflow-y: auto;">
-        <!-- Formulario de Registro de Nuevo Anunciante -->
-        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 18px;">
-          <h4 style="color: #FFF; font-size: 0.95rem; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
-            <span>➕</span> Registrar Nuevo Cliente Anunciante
-          </h4>
-          <form id="form-create-user">
-            <div class="form-group-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-              <div class="form-group">
-                <label class="form-label" for="input-new-user-username">Usuario de Acceso *</label>
-                <input type="text" id="input-new-user-username" class="form-input" placeholder="ej. pizzeria_don_juan" required autocomplete="off">
-              </div>
-              <div class="form-group">
-                <label class="form-label" for="input-new-user-password">Contraseña *</label>
-                <input type="password" id="input-new-user-password" class="form-input" placeholder="Contraseña segura" required autocomplete="new-password">
-              </div>
-            </div>
-
-            <div class="form-group-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-              <div class="form-group">
-                <label class="form-label" for="input-new-user-company">Empresa / Negocio *</label>
-                <input type="text" id="input-new-user-company" class="form-input" placeholder="ej. Pizzería Don Juan" required>
-              </div>
-              <div class="form-group">
-                <label class="form-label" for="input-new-user-name">Nombre de Contacto *</label>
-                <input type="text" id="input-new-user-name" class="form-input" placeholder="ej. Juan Pérez" required>
-              </div>
-            </div>
-
-            <div class="form-group-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
-              <div class="form-group">
-                <label class="form-label" for="input-new-user-email">Correo Electrónico</label>
-                <input type="email" id="input-new-user-email" class="form-input" placeholder="contacto@pizzeria.com">
-              </div>
-              <div class="form-group">
-                <label class="form-label" for="input-new-user-phone">Teléfono / WhatsApp</label>
-                <input type="text" id="input-new-user-phone" class="form-input" placeholder="+593 999 999 999">
-              </div>
-            </div>
-
-            <div style="display: flex; justify-content: flex-end;">
-              <button type="submit" class="btn btn-primary" id="btn-submit-create-user">
-                <span>💾</span> Crear Cuenta de Anunciante
-              </button>
-            </div>
-          </form>
-        </div>
-
-        <!-- Lista de Anunciantes Registrados -->
-        <div>
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-            <h4 style="color: #FFF; font-size: 0.95rem; margin: 0; display: flex; align-items: center; gap: 6px;">
-              <span>📋</span> Clientes Registrados
-            </h4>
-            <span id="badge-users-count" style="font-size: 0.75rem; background: rgba(168, 85, 247, 0.2); color: #C084FC; padding: 2px 8px; border-radius: 12px; border: 1px solid rgba(168, 85, 247, 0.3);">0 clientes</span>
-          </div>
-          <div id="users-list-container" style="display: flex; flex-direction: column; gap: 10px;">
-            <!-- Rellenado dinámicamente con las cuentas -->
-          </div>
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" id="btn-close-users-modal-footer">Cerrar</button>
-      </div>
     </div>
   </div>
 
@@ -706,6 +635,18 @@
             <div class="form-group">
               <label class="form-label" for="edit-device-max-slots">📊 Cupo Máximo de Anuncios:</label>
               <input type="number" id="edit-device-max-slots" class="form-input" min="1" max="50">
+            </div>
+          </div>
+
+          <!-- CREDENCIALES DE ACCESO DEL CLIENTE PARA ESTE TV -->
+          <div class="form-group-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 4px;">
+            <div class="form-group">
+              <label class="form-label" for="edit-device-user">👤 Usuario de este TV:</label>
+              <input type="text" id="edit-device-user" class="form-input" placeholder="ej. cliente_pizzeria" autocomplete="off">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="edit-device-pass">🔑 Clave (dejar vacío para mantener):</label>
+              <input type="password" id="edit-device-pass" class="form-input" placeholder="••••••••" autocomplete="new-password">
             </div>
           </div>
         </div>
