@@ -2230,6 +2230,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = await res.json();
         if (data.success && data.token) {
           localStorage.setItem('0media_auth_token', data.token);
+          localStorage.removeItem('0media_devices_v5');
+          devices = [];
           if (data.user) {
             currentUser = data.user;
             applyUserRoleUI();
@@ -2296,6 +2298,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = await res.json();
         if (data.success && data.token) {
           localStorage.setItem('0media_auth_token', data.token);
+          localStorage.removeItem('0media_devices_v5');
+          devices = [];
           if (data.user) {
             currentUser = data.user;
             applyUserRoleUI();
@@ -2374,6 +2378,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = await res.json();
         if (data.success && data.token) {
           localStorage.setItem('0media_auth_token', data.token);
+          localStorage.removeItem('0media_devices_v5');
+          devices = [];
           if (data.user) {
             currentUser = data.user;
             applyUserRoleUI();
@@ -2410,6 +2416,8 @@ document.addEventListener('DOMContentLoaded', () => {
         await apiFetch('/api/v1/admin/logout', { method: 'POST' });
       } catch (e) {}
       localStorage.removeItem('0media_auth_token');
+      localStorage.removeItem('0media_devices_v5');
+      devices = [];
       currentUser = null;
       applyUserRoleUI();
       showToast('🔒 Sesión cerrada.', '#64748B');
@@ -2769,7 +2777,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const activeAdsCount = (myDevice.items || []).filter(x => x.isEnabled !== false && x.approvalStatus === 'APPROVED').length;
     if (userPortalTvSlots) userPortalTvSlots.textContent = `📊 Cupos: ${activeAdsCount} / ${myDevice.maxSlots || 10} ocupados`;
 
-    const items = myDevice.items || [];
+    // FILTRO ESTRICTO: Cada usuario SOLO ve las publicidades que él mismo sube
+    const allDeviceItems = myDevice.items || [];
+    const items = allDeviceItems.filter(item => {
+      if (!currentUser) return false;
+      if (currentUser.role === 'ADMIN') return true;
+      const uid = (currentUser.id || '').toLowerCase().trim();
+      const uname = (currentUser.username || '').toLowerCase().trim();
+      const ucomp = (currentUser.company || '').toLowerCase().trim();
+      const uName = (currentUser.name || '').toLowerCase().trim();
+
+      const itOwnerId = (item.ownerId || '').toLowerCase().trim();
+      const itOwnerUser = (item.ownerUsername || '').toLowerCase().trim();
+      const itClientName = (item.clientName || '').toLowerCase().trim();
+
+      if (itOwnerId && (itOwnerId === uid || itOwnerId === uname)) return true;
+      if (itOwnerUser && itOwnerUser === uname) return true;
+      if (itClientName && (itClientName === uname || (ucomp && itClientName === ucomp) || (uName && itClientName === uName))) return true;
+      return false;
+    });
+
     userPortalAdsContainer.innerHTML = '';
 
     if (items.length === 0) {

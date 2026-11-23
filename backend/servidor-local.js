@@ -166,6 +166,25 @@ function checkAnyAuth(req) {
   return getAuthUser(req) !== null;
 }
 
+// Comprobación estricta de propiedad de publicidad por usuario
+function isOwnerOfItem(it, user) {
+  if (!it || !user) return false;
+  if (user.role === 'ADMIN') return true;
+  const uid = (user.id || '').toLowerCase().trim();
+  const uname = (user.username || '').toLowerCase().trim();
+  const ucomp = (user.company || '').toLowerCase().trim();
+  const uName = (user.name || '').toLowerCase().trim();
+
+  const itOwnerId = (it.ownerId || '').toLowerCase().trim();
+  const itOwnerUser = (it.ownerUsername || '').toLowerCase().trim();
+  const itClientName = (it.clientName || '').toLowerCase().trim();
+
+  if (itOwnerId && (itOwnerId === uid || itOwnerId === uname)) return true;
+  if (itOwnerUser && itOwnerUser === uname) return true;
+  if (itClientName && (itClientName === uname || (ucomp && itClientName === ucomp) || (uName && itClientName === uName))) return true;
+  return false;
+}
+
 // ---------------- 1.3 PROTECCIÓN CONTRA ATAQUES: RATE LIMITER EN MEMORIA (Sliding Window) ----------------
 const rateLimitBuckets = new Map();
 
@@ -367,6 +386,7 @@ try {
   try { sqliteDb.exec("ALTER TABLE global_items ADD COLUMN valid_from TEXT;"); } catch (e) {}
   try { sqliteDb.exec("ALTER TABLE global_items ADD COLUMN valid_to TEXT;"); } catch (e) {}
   try { sqliteDb.exec("ALTER TABLE global_items ADD COLUMN approval_status TEXT DEFAULT 'APPROVED';"); } catch (e) {}
+  try { sqliteDb.exec("ALTER TABLE global_items ADD COLUMN owner_username TEXT;"); } catch (e) {}
 
   console.log('[DATABASE] Motor SQLite inicializado en modo WAL con protección contra cortes de energía.');
 } catch (err) {
@@ -448,7 +468,13 @@ function loadState() {
         fileSizeBytes: row.file_size_bytes,
         checksumSha256: row.checksum_sha256,
         mimeType: row.mime_type,
-        isEnabled: Boolean(row.is_enabled)
+        isEnabled: Boolean(row.is_enabled),
+        ownerId: row.owner_id || null,
+        ownerUsername: row.owner_username || null,
+        clientName: row.client_name || null,
+        validFrom: row.valid_from || null,
+        validTo: row.valid_to || null,
+        approvalStatus: row.approval_status || 'APPROVED'
       }));
 
       try {
@@ -531,9 +557,10 @@ function saveState() {
         INSERT OR REPLACE INTO global_items (
           id, asset_id, title, media_type, media_tag, url, remote_url,
           duration_seconds, order_index, size_text, file_size_bytes,
-          checksum_sha256, mime_type, is_enabled, created_at
+          checksum_sha256, mime_type, is_enabled, owner_id, owner_username,
+          client_name, valid_from, valid_to, approval_status, created_at
         ) VALUES (
-          ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+          ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
         )
       `);
 
@@ -542,7 +569,10 @@ function saveState() {
         insertItem.run(
           it.id, it.assetId, it.title, it.mediaType, it.mediaTag, it.url, it.remoteUrl,
           it.durationSeconds, it.orderIndex, it.sizeText, it.fileSizeBytes,
-          it.checksumSha256, it.mimeType, it.isEnabled !== false ? 1 : 0, Date.now()
+          it.checksumSha256, it.mimeType, it.isEnabled !== false ? 1 : 0,
+          it.ownerId || null, it.ownerUsername || null, it.clientName || null,
+          it.validFrom || null, it.validTo || null, it.approvalStatus || 'APPROVED',
+          Date.now()
         );
       }
 
@@ -1788,14 +1818,15 @@ const server = http.createServer((req, res) => {
     };
 
     if (authUser.role === 'DEVICE_USER') {
-      // Filtrar para el usuario del televisor: SOLO ve su televisor asignado
+      // Filtrar para el usuario del televisor: SOLO ve su televisor asignado y SOLO las publicidades que él mismo subió
       const myDevice = pairedDevices.find(d => d.id === authUser.assignedDeviceId);
       const userDevices = myDevice ? [{
         ...myDevice,
         tvUser: myDevice.tvUser || '',
         hasTvPassword: Boolean(myDevice.tvPasswordHash),
         tvPasswordHash: undefined,
-        items: enrichItems(myDevice.items || []),
+        items: enrichItems(myDevice.items || []).filter(it => isOwnerOfItem(it, authUser)),
+        totalActiveAds: (myDevice.items || []).filter(x => x.isEnabled !== false && x.approvalStatus === 'APPROVED').length,
         tariff: myDevice.tariff || '',
         maxSlots: parseInt(myDevice.maxSlots, 10) || 10
       }] : [];
@@ -1812,19 +1843,19 @@ const server = http.createServer((req, res) => {
 
     if (authUser.role === 'CLIENT') {
       // Filtrar para el cliente: solo ve las pantallas asignadas o todas si '*',
-      // y en device.items SOLO ve sus propios anuncios (no puede ver los de otros clientes)
+      // y en device.items SOLO ve sus propias publicidades (NUNCA ve publicidades de otros clientes)
       const allowedScreens = authUser.assignedDevices || ['*'];
       const clientDevices = pairedDevices
         .filter(d => allowedScreens.includes('*') || allowedScreens.includes(d.id))
         .map(d => {
           const allItems = enrichItems(d.items || []);
-          const myItems = allItems.filter(it => it.ownerId === authUser.id);
+          const myItems = allItems.filter(it => isOwnerOfItem(it, authUser));
           const totalApproved = allItems.filter(it => it.approvalStatus === 'APPROVED' && it.isEnabled !== false).length;
           const maxSlots = parseInt(d.maxSlots, 10) || 10;
           return {
             ...d,
             tvPasswordHash: undefined,
-            items: myItems, // Solo ve sus anuncios
+            items: myItems, // Solo ve sus propios anuncios
             totalActiveAds: totalApproved,
             maxSlots: maxSlots,
             availableSlots: Math.max(0, maxSlots - totalApproved),
@@ -1842,7 +1873,7 @@ const server = http.createServer((req, res) => {
       return;
     }
 
-    // Rol ADMIN: ve todas las pantallas y todos los anuncios con sus métricas y clientes
+    // Rol ADMIN: es el ÚNICO usuario que ve todas las pantallas y todas las publicidades de todos los clientes
     const adminDevices = pairedDevices.map(d => ({
       ...d,
       tvUser: d.tvUser || '',
@@ -1906,8 +1937,9 @@ const server = http.createServer((req, res) => {
         const isClient = authUser.role === 'CLIENT';
         const isDeviceUser = authUser.role === 'DEVICE_USER';
         const isRestricted = isClient || isDeviceUser;
-        const ownerId = isRestricted ? authUser.id : 'admin';
-        const finalClientName = isRestricted ? (authUser.company || authUser.name) : (clientName || 'Institucional 0Media').trim();
+        const ownerId = isRestricted ? (authUser.id || authUser.username) : 'admin';
+        const ownerUsername = isRestricted ? (authUser.username || authUser.name || authUser.id).toLowerCase() : 'admin';
+        const finalClientName = isRestricted ? (authUser.company || authUser.name || authUser.username) : (clientName || 'Institucional 0Media').trim();
         const finalClientPhone = isRestricted ? (authUser.phone || '') : (clientPhone || '').trim();
         const approvalStatus = isRestricted ? 'PENDING' : 'APPROVED'; // Si es cliente/usuario TV queda en revisión; si es admin se aprueba directo
 
@@ -1980,6 +2012,7 @@ const server = http.createServer((req, res) => {
           isEnabled: true,
           // Datos comerciales y de gestión DOOH
           ownerId: ownerId,
+          ownerUsername: ownerUsername,
           clientName: finalClientName,
           clientPhone: finalClientPhone,
           validFrom: validFrom || null,
@@ -2054,17 +2087,21 @@ const server = http.createServer((req, res) => {
       const itemId = data.itemId;
       const targetTvId = data.targetTvId;
 
-      // Seguridad: Clientes o usuarios de televisor solo pueden alterar sus propios anuncios
-      if (authUser.role === 'DEVICE_USER') {
-        if (targetTvId && targetTvId !== authUser.assignedDeviceId) {
-          res.writeHead(403, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ success: false, error: "No tienes permiso para pausar anuncios de otro televisor." }));
-          return;
+      // Seguridad: Solo el dueño o el administrador puede pausar/activar anuncios
+      if (authUser.role !== 'ADMIN') {
+        let it = null;
+        if (targetTvId) {
+          const dev = state.devices.find(d => d.id === targetTvId);
+          it = dev?.items?.find(x => x.id === itemId);
         }
-      } else if (authUser.role === 'CLIENT') {
-        const dev = targetTvId ? state.devices.find(d => d.id === targetTvId) : null;
-        const it = dev?.items?.find(x => x.id === itemId) || state.customItems?.find(x => x.id === itemId);
-        if (it && it.ownerId !== authUser.id) {
+        if (!it) {
+          for (const d of state.devices) {
+            it = (d.items || []).find(x => x.id === itemId);
+            if (it) break;
+          }
+        }
+        if (!it) it = state.customItems?.find(x => x.id === itemId);
+        if (it && !isOwnerOfItem(it, authUser)) {
           res.writeHead(403, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ success: false, error: "No tienes permiso para pausar este anuncio." }));
           return;
@@ -2355,24 +2392,21 @@ const server = http.createServer((req, res) => {
       const itemId = data.itemId;
       const targetTvId = data.targetTvId;
 
-      // Seguridad: Si es cliente o usuario de televisor, verificar permisos
-      if (authUser.role === 'DEVICE_USER') {
-        if (targetTvId && targetTvId !== authUser.assignedDeviceId) {
-          res.writeHead(403, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ success: false, error: "No tienes permiso para eliminar anuncios de otro televisor." }));
-          return;
-        }
-      } else if (authUser.role === 'CLIENT') {
-        let isOwner = false;
+      // Seguridad: Solo el dueño o el administrador puede eliminar anuncios
+      if (authUser.role !== 'ADMIN') {
+        let it = null;
         if (targetTvId) {
           const dev = state.devices.find(d => d.id === targetTvId);
-          const it = dev?.items?.find(x => x.id === itemId);
-          if (it && it.ownerId === authUser.id) isOwner = true;
-        } else {
-          const it = state.customItems?.find(x => x.id === itemId);
-          if (it && it.ownerId === authUser.id) isOwner = true;
+          it = dev?.items?.find(x => x.id === itemId);
         }
-        if (!isOwner) {
+        if (!it) {
+          for (const d of state.devices) {
+            it = (d.items || []).find(x => x.id === itemId);
+            if (it) break;
+          }
+        }
+        if (!it) it = state.customItems?.find(x => x.id === itemId);
+        if (it && !isOwnerOfItem(it, authUser)) {
           res.writeHead(403, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ success: false, error: "No tienes permiso para eliminar este anuncio." }));
           return;
