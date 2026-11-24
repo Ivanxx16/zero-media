@@ -1988,20 +1988,39 @@ const server = http.createServer((req, res) => {
         const sizeKb = Math.round(fileSize / 1024);
         const sizeText = sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`;
 
-        const isGlobalBroadcast = !effectiveTargetTvId || effectiveTargetTvId === 'ALL' || effectiveTargetTvId === 'all' || Boolean(data.isGlobal);
-        const isPriority = isGlobalBroadcast || Boolean(data.isPriority);
-        const targetDevice = isGlobalBroadcast ? null : state.devices.find(d => d.id === effectiveTargetTvId);
+        let targetDeviceIds = [];
+        if (Array.isArray(data.targetTvIds) && data.targetTvIds.length > 0) {
+          targetDeviceIds = data.targetTvIds;
+        } else if (Array.isArray(data.targetTvId)) {
+          targetDeviceIds = data.targetTvId;
+        } else if (effectiveTargetTvId && effectiveTargetTvId !== 'ALL' && effectiveTargetTvId !== 'all') {
+          targetDeviceIds = [effectiveTargetTvId];
+        }
 
-        if (targetDevice && targetDevice.maxSlots) {
-          const currentCount = (targetDevice.items || []).filter(x => x.isEnabled !== false).length;
-          const maxAllowed = parseInt(targetDevice.maxSlots, 10) || 10;
-          if (currentCount >= maxAllowed) {
-            res.writeHead(400, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({
-              success: false,
-              error: `El televisor "${targetDevice.name}" ha completado su cupo comercial de ${maxAllowed} publicidades.`
-            }));
-            return;
+        const isAllSelected = Boolean(data.allDevices) || targetDeviceIds.includes('ALL') || targetDeviceIds.includes('all');
+        const isGlobalBroadcast = isAllSelected || (targetDeviceIds.length === 0 && Boolean(data.isGlobal)) || (!effectiveTargetTvId && !data.targetTvIds);
+        const isPriority = isGlobalBroadcast || Boolean(data.isPriority);
+
+        const activePairedDevs = state.devices.filter(d => d.isPaired);
+        let targetDevices = [];
+        if (isGlobalBroadcast) {
+          targetDevices = activePairedDevs;
+        } else if (targetDeviceIds.length > 0) {
+          targetDevices = state.devices.filter(d => targetDeviceIds.includes(d.id));
+        }
+
+        for (const targetDevice of targetDevices) {
+          if (targetDevice.maxSlots) {
+            const currentCount = (targetDevice.items || []).filter(x => x.isEnabled !== false).length;
+            const maxAllowed = parseInt(targetDevice.maxSlots, 10) || 10;
+            if (currentCount >= maxAllowed) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({
+                success: false,
+                error: `El televisor "${targetDevice.name}" ha completado su cupo comercial de ${maxAllowed} publicidades.`
+              }));
+              return;
+            }
           }
         }
 
@@ -2028,36 +2047,29 @@ const server = http.createServer((req, res) => {
           validFrom: validFrom || null,
           validTo: validTo || null,
           approvalStatus: approvalStatus,
-          tariffAmount: targetDevice?.tariff ? parseFloat(targetDevice.tariff) : 0,
+          tariffAmount: targetDevices[0]?.tariff ? parseFloat(targetDevices[0].tariff) : 0,
           isGlobal: isGlobalBroadcast,
           isPriority: isPriority,
+          targetDeviceIds: isGlobalBroadcast ? ['ALL'] : targetDevices.map(d => d.id),
           createdAt: Date.now()
         };
 
-        if (targetDevice) {
-          if (!Array.isArray(targetDevice.items)) targetDevice.items = [];
+        targetDevices.forEach(d => {
+          if (!Array.isArray(d.items)) d.items = [];
           if (replacePrevious === true && !isClient) {
-            targetDevice.items = [newItem];
+            d.items = [newItem];
           } else if (isPriority) {
-            targetDevice.items.unshift(newItem); // Prioridad: se ubica al frente
+            d.items.unshift({ ...newItem }); // Prioridad: se ubica al frente
           } else {
-            targetDevice.items.push(newItem);
+            d.items.push({ ...newItem });
           }
-          targetDevice.items.forEach((it, idx) => { it.orderIndex = idx + 1; });
-          console.log(`[UPLOAD] Publicidad asignada a pantalla "${targetDevice.name}" por ${finalClientName} (Estado: ${approvalStatus}).`);
+          d.items.forEach((it, idx) => { it.orderIndex = idx + 1; });
+        });
+
+        if (isGlobalBroadcast) {
+          console.log(`[UPLOAD GLOBAL] Publicidad General prioritaria sincronizada a ${targetDevices.length} pantallas por ${finalClientName} (Estado: ${approvalStatus}).`);
         } else {
-          // Sincronización global con prioridad en todos los dispositivos vinculados
-          const activeDevs = state.devices.filter(d => d.isPaired);
-          activeDevs.forEach(d => {
-            if (!Array.isArray(d.items)) d.items = [];
-            if (isPriority) {
-              d.items.unshift({ ...newItem }); // Se ubica primero en cada carrusel
-            } else {
-              d.items.push({ ...newItem });
-            }
-            d.items.forEach((it, idx) => { it.orderIndex = idx + 1; });
-          });
-          console.log(`[UPLOAD GLOBAL] Publicidad General prioritaria sincronizada a ${activeDevs.length} pantallas por ${finalClientName} (Estado: ${approvalStatus}).`);
+          console.log(`[UPLOAD MULTI] Publicidad asignada a ${targetDevices.length} pantalla(s) seleccionada(s) por ${finalClientName} (Estado: ${approvalStatus}).`);
         }
 
         // Catálogo global
@@ -2074,7 +2086,13 @@ const server = http.createServer((req, res) => {
 
         // Solo se transmite a la pantalla física si ya está aprobada
         if (approvalStatus === 'APPROVED') {
-          broadcastPlaylistUpdated(state.manifestVersion, `Nueva publicidad: ${newItem.title}`, targetDevice?.id);
+          if (isGlobalBroadcast) {
+            broadcastPlaylistUpdated(state.manifestVersion, `Nueva publicidad: ${newItem.title}`);
+          } else {
+            targetDevices.forEach(d => {
+              broadcastPlaylistUpdated(state.manifestVersion, `Nueva publicidad: ${newItem.title}`, d.id);
+            });
+          }
         }
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -2336,15 +2354,24 @@ const server = http.createServer((req, res) => {
     const globalAds = [];
     const seenIds = new Set();
 
+    const enrichGlobalAd = (it) => {
+      const devsWithAd = (state.devices || []).filter(d => d.isPaired && (d.items || []).some(x => x.id === it.id));
+      const devCount = devsWithAd.length;
+      const devNames = devsWithAd.map(d => d.name);
+      const isAll = (it.targetDeviceIds && it.targetDeviceIds.includes('ALL')) || it.isGlobal || devCount === pairedCount;
+      return {
+        ...it,
+        activeDevicesCount: devCount || (it.isGlobal ? pairedCount : 0),
+        totalPairedDevices: pairedCount,
+        targetDeviceNames: devNames,
+        isAllDevices: isAll
+      };
+    };
+
     (state.customItems || []).forEach(it => {
       if ((it.isGlobal || it.ownerId === 'admin') && !seenIds.has(it.id)) {
         seenIds.add(it.id);
-        const devCount = (state.devices || []).filter(d => d.isPaired && (d.items || []).some(x => x.id === it.id)).length;
-        globalAds.push({
-          ...it,
-          activeDevicesCount: devCount || pairedCount,
-          totalPairedDevices: pairedCount
-        });
+        globalAds.push(enrichGlobalAd(it));
       }
     });
 
@@ -2353,12 +2380,7 @@ const server = http.createServer((req, res) => {
         d.items.forEach(it => {
           if ((it.isGlobal || it.ownerId === 'admin') && !seenIds.has(it.id)) {
             seenIds.add(it.id);
-            const devCount = (state.devices || []).filter(dev => dev.isPaired && (dev.items || []).some(x => x.id === it.id)).length;
-            globalAds.push({
-              ...it,
-              activeDevicesCount: devCount || pairedCount,
-              totalPairedDevices: pairedCount
-            });
+            globalAds.push(enrichGlobalAd(it));
           }
         });
       }

@@ -1,13 +1,16 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Zero Media — Tu mejor alternativa para hacer Publicidad</title>
-  <meta name="description" content="Centro de control maestro para gestión de pantallas Android TV y programación de campañas publicitarias independientes con videos, fotos y GIFs para 0Media Digital Signage.">
+  <meta name="description"
+    content="Centro de control maestro para gestión de pantallas Android TV y programación de campañas publicitarias independientes con videos, fotos y GIFs para 0Media Digital Signage.">
   <link rel="stylesheet" href="styles.css">
   <link rel="icon" type="image/png" href="assets/logo.png">
 </head>
+
 <body>
 
   <!-- ================= SIDEBAR NAVIGATION (SOLO 2 OPCIONES) ================= -->
@@ -38,7 +41,8 @@
         <a class="nav-item" href="#approvals" data-view="approvals" id="nav-approvals">
           <span class="icon">⏳</span>
           <span>Aprobaciones</span>
-          <span class="badge-counter" id="badge-pending-count" style="background: #F59E0B; color: #000; font-weight: 800; display: none;">0</span>
+          <span class="badge-counter" id="badge-pending-count"
+            style="background: #F59E0B; color: #000; font-weight: 800; display: none;">0</span>
         </a>
 
         <a class="nav-item" href="#playlists" data-view="playlists" id="nav-playlists">
@@ -50,7 +54,8 @@
         <a class="nav-item" href="#global-ads" data-view="global-ads" id="nav-global-ads">
           <span class="icon">🌐</span>
           <span>Publicidad General</span>
-          <span class="badge-counter" id="badge-global-ads-count" style="background: #3B82F6; color: #FFF; font-weight: 700; display: none;">0</span>
+          <span class="badge-counter" id="badge-global-ads-count"
+            style="background: #3B82F6; color: #FFF; font-weight: 700; display: none;">0</span>
         </a>
       </div>
 
@@ -71,7 +76,8 @@
           <div class="role" id="sidebar-user-role">Propietario 0Media</div>
         </div>
       </div>
-      <button class="btn btn-secondary btn-sidebar-logout btn-logout-action" id="btn-sidebar-logout" title="Cerrar sesión" style="display: none;">
+      <button class="btn btn-secondary btn-sidebar-logout btn-logout-action" id="btn-sidebar-logout"
+        title="Cerrar sesión" style="display: none;">
         <span>🚪</span> Cerrar Sesión
       </button>
     </div>
@@ -92,17 +98,21 @@
         </div>
 
         <!-- Perfil del Usuario Activo -->
-        <div class="user-profile-badge" id="user-profile-badge" style="display: flex; align-items: center; gap: 8px; padding: 6px 14px; background: rgba(30, 41, 59, 0.7); border: 1px solid var(--border-subtle); border-radius: 20px; font-size: 0.82rem; color: #FFF;">
+        <div class="user-profile-badge" id="user-profile-badge"
+          style="display: flex; align-items: center; gap: 8px; padding: 6px 14px; background: rgba(30, 41, 59, 0.7); border: 1px solid var(--border-subtle); border-radius: 20px; font-size: 0.82rem; color: #FFF;">
           <span id="user-role-icon">👑</span>
           <strong id="user-display-name">Administrador</strong>
         </div>
 
         <!-- Botón de Cerrar Sesión -->
-        <button class="btn btn-secondary btn-logout-action" id="btn-admin-logout" title="Cerrar Sesión" style="border-color: rgba(148, 163, 184, 0.3); padding: 6px 10px; font-size: 0.8rem; display: none;">
+        <button class="btn btn-secondary btn-logout-action" id="btn-admin-logout" title="Cerrar Sesión"
+          style="border-color: rgba(148, 163, 184, 0.3); padding: 6px 10px; font-size: 0.8rem; display: none;">
           <span>🚪</span> Salir
         </button>
 
-        <button class="btn btn-secondary" id="btn-revoke-session" title="Cerrar vinculación de pantalla para volver a pedir código o escanear QR" style="border-color: rgba(239, 68, 68, 0.4); color: #EF4444;">
+        <button class="btn btn-secondary" id="btn-revoke-session"
+          title="Cerrar vinculación de pantalla para volver a pedir código o escanear QR"
+          style="border-color: rgba(239, 68, 68, 0.4); color: #EF4444;">
           <span>🔒</span> Desvincular / Pedir Código
         </button>
 
@@ -135,7 +145,8 @@
             </p>
 
             <p class="welcome-description">
-              Impulsa tu negocio con pantallas comerciales de alta visibilidad. Elige tu televisor, publica tus anuncios y llega a miles de personas en tiempo real.
+              Impulsa tu negocio con pantallas comerciales de alta visibilidad. Elige tu televisor, publica tus anuncios
+              y llega a miles de personas en tiempo real.
             </p>
           </div>
 
@@ -148,7 +159,8 @@
                 <span class="welcome-card-badge admin-badge">Control Maestro</span>
                 <h3 class="welcome-card-title">Administrador</h3>
                 <p class="welcome-card-desc">
-                  Acceso exclusivo para vincular pantallas Android TV, fijar tarifas comerciales por ubicación y moderar/aprobar publicidades de clientes.
+                  Acceso exclusivo para vincular pantallas Android TV, fijar tarifas comerciales por ubicación y
+                  moderar/aprobar publicidades de clientes.
                 </p>
                 <ul class="welcome-card-features">
                   <li><span>✓</span> Vincular televisores físicos con código PIN</li>
@@ -168,7 +180,8 @@
                 <span class="welcome-card-badge user-badge">Publicidad para Clientes</span>
                 <h3 class="welcome-card-title">Usuario Anunciante</h3>
                 <p class="welcome-card-desc">
-                  Publica tus fotos, videos o GIFs en cualquier televisor de nuestra red comercial. Crea tu cuenta 100% web sin instalar ninguna aplicación.
+                  Publica tus fotos, videos o GIFs en cualquier televisor de nuestra red comercial. Crea tu cuenta 100%
+                  web sin instalar ninguna aplicación.
                 </p>
                 <ul class="welcome-card-features">
                   <li><span>✓</span> Catálogo de pantallas con tarifas y cupos</li>
@@ -237,7 +250,8 @@
         <div class="section-header">
           <div>
             <h3 class="section-title">Dispositivos Vinculados al Sistema</h3>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Monitorea en tiempo real qué publicidad se está proyectando en cada televisor y su estado de salud.</p>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Monitorea en tiempo real qué
+              publicidad se está proyectando en cada televisor y su estado de salud.</p>
           </div>
           <button class="btn btn-secondary" id="btn-refresh-devices">
             <span>🔄</span> Refrescar Pantallas
@@ -256,7 +270,8 @@
           <div>
             <h3 class="section-title">⏳ Bandeja de Aprobación de Publicidades</h3>
             <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
-              Revisa las solicitudes de publicidad enviadas por usuarios anunciantes. Al aprobar un anuncio, saldrá al aire de inmediato en la pantalla seleccionada.
+              Revisa las solicitudes de publicidad enviadas por usuarios anunciantes. Al aprobar un anuncio, saldrá al
+              aire de inmediato en la pantalla seleccionada.
             </p>
           </div>
           <button class="btn btn-secondary" id="btn-refresh-approvals">
@@ -275,7 +290,8 @@
           <div>
             <h3 class="section-title">Programación de Publicidad por Televisor</h3>
             <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
-              Selecciona cualquier televisor vinculado para subirle y asignarle videos, fotos o GIFs de forma completamente independiente.
+              Selecciona cualquier televisor vinculado para subirle y asignarle videos, fotos o GIFs de forma
+              completamente independiente.
             </p>
           </div>
           <button class="btn btn-primary" id="btn-sync-all">
@@ -290,7 +306,8 @@
               <span class="icon">📺</span>
               <div>
                 <strong>Seleccionar Televisor Vinculado:</strong>
-                <div style="font-size: 0.78rem; color: var(--text-muted); font-weight: normal;">Elige el televisor cuya publicidad deseas administrar:</div>
+                <div style="font-size: 0.78rem; color: var(--text-muted); font-weight: normal;">Elige el televisor cuya
+                  publicidad deseas administrar:</div>
               </div>
             </div>
 
@@ -359,7 +376,8 @@
                 <!-- Ticker overlay at bottom of simulator -->
                 <div class="tv-ticker-bar" id="simulator-ticker">
                   <span class="ticker-icon">EN VIVO</span>
-                  <span class="ticker-text" id="simulator-ticker-text">0Media Digital Signage — Programación Exclusiva de esta Pantalla</span>
+                  <span class="ticker-text" id="simulator-ticker-text">0Media Digital Signage — Programación Exclusiva
+                    de esta Pantalla</span>
                 </div>
               </div>
 
@@ -381,14 +399,17 @@
                   <span class="icon">⬆️</span>
                   <div>
                     <strong>Añadir Publicidad a este Televisor</strong>
-                    <div style="font-size: 0.78rem; color: var(--text-muted);">Sube videos, fotos o GIFs que se proyectarán solo en esta pantalla:</div>
+                    <div style="font-size: 0.78rem; color: var(--text-muted);">Sube videos, fotos o GIFs que se
+                      proyectarán solo en esta pantalla:</div>
                   </div>
                 </div>
               </div>
 
               <div class="upload-drop-content" style="position: relative; overflow: hidden; cursor: pointer;">
                 <!-- TRANSPARENT FULL-OVERLAY NATIVE FILE INPUT: 100% RELIABLE DIRECT CLICK WITH MULTIPLE SUPPORT -->
-                <input type="file" id="media-file-input" accept="image/*,video/*,.png,.jpg,.jpeg,.webp,.gif,.mp4,.webm" multiple style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 50;">
+                <input type="file" id="media-file-input" accept="image/*,video/*,.png,.jpg,.jpeg,.webp,.gif,.mp4,.webm"
+                  multiple
+                  style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 50;">
 
                 <div class="supported-formats-pills" style="pointer-events: none;">
                   <span class="format-pill format-video">🎬 Videos: MP4, WebM</span>
@@ -396,9 +417,11 @@
                   <span class="format-pill format-gif">✨ Animaciones: GIF</span>
                 </div>
 
-                <p class="drop-text" style="pointer-events: none;">Arrastra tus archivos aquí o haz clic para seleccionar 1 o varios videos y fotos a la vez para el carrusel</p>
+                <p class="drop-text" style="pointer-events: none;">Arrastra tus archivos aquí o haz clic para
+                  seleccionar 1 o varios videos y fotos a la vez para el carrusel</p>
 
-                <div class="btn btn-primary" id="btn-trigger-upload-visual" style="pointer-events: none; display: inline-flex; align-items: center; gap: 8px;">
+                <div class="btn btn-primary" id="btn-trigger-upload-visual"
+                  style="pointer-events: none; display: inline-flex; align-items: center; gap: 8px;">
                   <span>📂</span> Seleccionar Videos o Fotos (Uno o Varios)
                 </div>
               </div>
@@ -415,7 +438,9 @@
                 </div>
               </div>
               <div style="display: flex; align-items: center; gap: 8px;">
-                <button class="btn btn-secondary" id="btn-clear-all-tv-ads" style="font-size: 0.78rem; padding: 5px 10px; border-color: rgba(239,68,68,0.4); color: #EF4444;" title="Quitar todas las publicidades anteriores">
+                <button class="btn btn-secondary" id="btn-clear-all-tv-ads"
+                  style="font-size: 0.78rem; padding: 5px 10px; border-color: rgba(239,68,68,0.4); color: #EF4444;"
+                  title="Quitar todas las publicidades anteriores">
                   🗑️ Borrar Todas
                 </button>
                 <span class="badge-counter" id="tv-items-badge">0 Anuncios</span>
@@ -429,7 +454,8 @@
                   <span class="duration-icon">⏱️</span>
                   <div>
                     <h5 class="duration-panel-title">Tiempos y Duración de la Publicidad</h5>
-                    <p class="duration-panel-desc">Ajusta cuántos segundos permanece cada video, foto o GIF en la pantalla</p>
+                    <p class="duration-panel-desc">Ajusta cuántos segundos permanece cada video, foto o GIF en la
+                      pantalla</p>
                   </div>
                 </div>
                 <div class="duration-stats-strip">
@@ -484,9 +510,12 @@
         <!-- Banner del Televisor asignado -->
         <div class="user-portal-banner" id="user-portal-banner">
           <div class="user-portal-tv-info">
-            <span style="font-size: 0.8rem; color: #93C5FD; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700;">📺 Pantalla Asignada para Publicitar</span>
+            <span
+              style="font-size: 0.8rem; color: #93C5FD; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700;">📺
+              Pantalla Asignada para Publicitar</span>
             <h2 id="user-portal-tv-name">Cargando Televisor...</h2>
-            <div style="font-size: 0.88rem; color: var(--text-muted); margin-top: 3px;" id="user-portal-tv-location">📍 Ubicación</div>
+            <div style="font-size: 0.88rem; color: var(--text-muted); margin-top: 3px;" id="user-portal-tv-location">📍
+              Ubicación</div>
             <div class="user-portal-tv-badges" style="margin-top: 10px;">
               <span class="device-tariff-badge" id="user-portal-tv-tariff">💵 Tarifa: --</span>
               <span class="device-slots-badge" id="user-portal-tv-slots">📊 Cupos: --</span>
@@ -495,10 +524,12 @@
           </div>
 
           <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-            <button class="btn btn-secondary" id="btn-user-open-catalog" style="padding: 12px 18px; font-size: 0.92rem; gap: 8px;">
+            <button class="btn btn-secondary" id="btn-user-open-catalog"
+              style="padding: 12px 18px; font-size: 0.92rem; gap: 8px;">
               <span>🔗</span> Quiero vincularme a un dispositivo
             </button>
-            <button class="btn btn-primary" id="btn-user-open-upload" style="padding: 12px 22px; font-size: 0.95rem; box-shadow: 0 4px 20px rgba(37,99,235,0.45); gap: 8px;">
+            <button class="btn btn-primary" id="btn-user-open-upload"
+              style="padding: 12px 22px; font-size: 0.95rem; box-shadow: 0 4px 20px rgba(37,99,235,0.45); gap: 8px;">
               <span>➕</span> Subir Nueva Publicidad
             </button>
           </div>
@@ -509,7 +540,8 @@
           <div>
             <h3 class="section-title">Mis Publicidades en esta Pantalla</h3>
             <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
-              Revisa el estado de tus fotos, videos y GIFs asignados a este televisor y consulta el contador de emisiones en vivo.
+              Revisa el estado de tus fotos, videos y GIFs asignados a este televisor y consulta el contador de
+              emisiones en vivo.
             </p>
           </div>
           <button class="btn btn-secondary" id="btn-refresh-user-ads">
@@ -528,15 +560,18 @@
           <div>
             <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
               <h3 class="section-title">🌐 Publicidad General — Red Completa de Televisores</h3>
-              <span class="badge" style="background: rgba(37, 99, 235, 0.2); color: #60A5FA; border: 1px solid rgba(37, 99, 235, 0.4); font-size: 0.75rem; padding: 3px 10px; border-radius: 20px; font-weight: 700;">
+              <span class="badge"
+                style="background: rgba(37, 99, 235, 0.2); color: #60A5FA; border: 1px solid rgba(37, 99, 235, 0.4); font-size: 0.75rem; padding: 3px 10px; border-radius: 20px; font-weight: 700;">
                 👑 Exclusivo Administrador
               </span>
-              <span class="badge" style="background: rgba(16, 185, 129, 0.18); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.4); font-size: 0.75rem; padding: 3px 10px; border-radius: 20px; font-weight: 700;">
+              <span class="badge"
+                style="background: rgba(16, 185, 129, 0.18); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.4); font-size: 0.75rem; padding: 3px 10px; border-radius: 20px; font-weight: 700;">
                 ⚡ Prioridad Máxima
               </span>
             </div>
             <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
-              Sube y administra publicidad institucional, avisos o campañas que se transmitirán <strong>automáticamente en TODOS los televisores vinculados</strong> en la red de 0Media con máxima prioridad.
+              Sube y administra publicidad institucional, avisos o campañas que se transmitirán <strong>automáticamente
+                en TODOS los televisores vinculados</strong> en la red de 0Media con máxima prioridad.
             </p>
           </div>
           <button class="btn btn-secondary" id="btn-refresh-global-ads" style="gap: 8px;">
@@ -551,14 +586,16 @@
               📡
             </div>
             <div>
-              <div style="font-size: 0.78rem; color: #93C5FD; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">
+              <div
+                style="font-size: 0.78rem; color: #93C5FD; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">
                 Emisión Simultánea Global
               </div>
               <h4 style="font-size: 1.15rem; color: #FFF; margin: 3px 0 4px 0;">
                 Difusión en Toda la Red de Pantallas
               </h4>
               <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0;">
-                Estas publicidades entran en la <strong>primera posición (#1)</strong> de cada pantalla, identificadas oficialmente como <strong>👑 Administrador (0Media)</strong>.
+                Estas publicidades entran en la <strong>primera posición (#1)</strong> de cada pantalla, identificadas
+                oficialmente como <strong>👑 Administrador (0Media)</strong>.
               </p>
             </div>
           </div>
@@ -575,16 +612,20 @@
         </div>
 
         <!-- Tarjeta de Subida de Publicidad General -->
-        <div class="global-upload-card" style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 22px; margin-bottom: 28px; box-shadow: 0 4px 20px rgba(0,0,0,0.35);">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px;">
+        <div class="global-upload-card"
+          style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 22px; margin-bottom: 28px; box-shadow: 0 4px 20px rgba(0,0,0,0.35);">
+          <div
+            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px;">
             <div style="display: flex; align-items: center; gap: 10px;">
               <span style="font-size: 1.3rem;">➕</span>
               <div>
                 <h4 style="color: #FFF; font-size: 1.05rem; margin: 0;">Publicar en Todas las Pantallas</h4>
-                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">El archivo se transmitirá a cada televisor conectado con prioridad máxima</div>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">El archivo se transmitirá a
+                  cada televisor conectado con prioridad máxima</div>
               </div>
             </div>
-            <span style="font-size: 0.8rem; background: rgba(59, 130, 246, 0.15); color: #93C5FD; border: 1px solid rgba(59, 130, 246, 0.35); padding: 4px 12px; border-radius: 20px; font-weight: 600;">
+            <span
+              style="font-size: 0.8rem; background: rgba(59, 130, 246, 0.15); color: #93C5FD; border: 1px solid rgba(59, 130, 246, 0.35); padding: 4px 12px; border-radius: 20px; font-weight: 600;">
               👑 Emisor: Admin
             </span>
           </div>
@@ -593,19 +634,30 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;" class="global-upload-grid">
               <!-- Dropzone / Selector de archivo -->
               <div>
-                <input type="file" id="global-media-file-input" accept="image/*,video/mp4,video/webm,image/gif" style="display: none;">
-                <div class="drop-zone-upload" id="global-drop-zone-upload" style="min-height: 200px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border: 2px dashed rgba(59, 130, 246, 0.4); border-radius: 12px; background: rgba(15, 23, 42, 0.5); padding: 18px; text-align: center; transition: all 0.2s;">
+                <input type="file" id="global-media-file-input" accept="image/*,video/mp4,video/webm,image/gif"
+                  style="display: none;">
+                <div class="drop-zone-upload" id="global-drop-zone-upload"
+                  style="min-height: 200px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border: 2px dashed rgba(59, 130, 246, 0.4); border-radius: 12px; background: rgba(15, 23, 42, 0.5); padding: 18px; text-align: center; transition: all 0.2s;">
                   <div id="global-upload-prompt">
                     <span style="font-size: 2.2rem; display: block; margin-bottom: 8px;">📤</span>
                     <strong style="color: #FFF; font-size: 0.92rem;">Arrastra aquí tu foto, video o GIF</strong>
-                    <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">O haz clic para explorar en tu computadora</div>
-                    <div style="font-size: 0.72rem; color: #93C5FD; margin-top: 8px;">Soporta JPG, PNG, MP4 (1080p/4K) y GIF animado</div>
+                    <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">O haz clic para explorar
+                      en tu computadora</div>
+                    <div style="font-size: 0.72rem; color: #93C5FD; margin-top: 8px;">Soporta JPG, PNG, MP4 (1080p/4K) y
+                      GIF animado</div>
                   </div>
                   <!-- Preview interna cuando se selecciona -->
-                  <div id="global-upload-preview" style="display: none; width: 100%; height: 180px; position: relative;">
-                    <img id="global-preview-img" style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px; display: none;" alt="Preview">
-                    <video id="global-preview-vid" style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px; display: none;" muted loop></video>
-                    <button type="button" id="btn-remove-global-preview" style="position: absolute; top: 6px; right: 6px; background: rgba(239, 68, 68, 0.85); color: #FFF; border: none; border-radius: 50%; width: 26px; height: 26px; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; justify-content: center;" title="Cambiar archivo">&times;</button>
+                  <div id="global-upload-preview"
+                    style="display: none; width: 100%; height: 180px; position: relative;">
+                    <img id="global-preview-img"
+                      style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px; display: none;"
+                      alt="Preview">
+                    <video id="global-preview-vid"
+                      style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px; display: none;" muted
+                      loop></video>
+                    <button type="button" id="btn-remove-global-preview"
+                      style="position: absolute; top: 6px; right: 6px; background: rgba(239, 68, 68, 0.85); color: #FFF; border: none; border-radius: 50%; width: 26px; height: 26px; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; justify-content: center;"
+                      title="Cambiar archivo">&times;</button>
                   </div>
                 </div>
               </div>
@@ -614,7 +666,8 @@
               <div style="display: flex; flex-direction: column; gap: 14px;">
                 <div class="form-group" style="margin-bottom: 0;">
                   <label class="form-label" for="input-global-ad-title">Título de la Publicidad General:</label>
-                  <input type="text" id="input-global-ad-title" class="form-input" placeholder="Ej. Campaña 0Media Verano 2026" required>
+                  <input type="text" id="input-global-ad-title" class="form-input"
+                    placeholder="Ej. Campaña 0Media Verano 2026" required>
                 </div>
 
                 <div class="form-group" style="margin-bottom: 0;">
@@ -627,15 +680,38 @@
                   </div>
                 </div>
 
+                <!-- SELECCIÓN DE DISPOSITIVOS DE DESTINO -->
+                <div class="form-group" style="margin-bottom: 0;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
+                    <label class="form-label" style="margin-bottom: 0; display: flex; align-items: center; gap: 6px;">
+                      <span>📺</span> Dispositivos de Destino:
+                    </label>
+                    <label class="check-all-devices-label" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.8rem; color: #93C5FD; font-weight: 600; background: rgba(59, 130, 246, 0.12); padding: 5px 12px; border-radius: 8px; border: 1px solid rgba(59, 130, 246, 0.3); user-select: none; transition: all 0.2s;">
+                      <input type="checkbox" id="check-all-devices-global" checked style="accent-color: #3B82F6; width: 16px; height: 16px; cursor: pointer;">
+                      <span>En todos los dispositivos</span>
+                    </label>
+                  </div>
+                  
+                  <!-- Barra horizontal deslizable con chips de selección de dispositivos -->
+                  <div class="global-devices-selector-bar" id="global-devices-selector-bar">
+                    <!-- Rellenado dinámicamente con los televisores vinculados -->
+                  </div>
+                  <div id="global-devices-help-text" style="font-size: 0.74rem; color: var(--text-muted); margin-top: 4px;">
+                    ℹ️ Casilla marcada: se emitirá en todos los televisores. Desmárcala para elegir pantallas específicas en la barra.
+                  </div>
+                </div>
+
                 <!-- Resumen de Emisión Prioritaria -->
-                <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem;">
+                <div
+                  style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem;">
                   <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
                     <span>👑 Identidad:</span>
                     <strong style="color: #93C5FD;">Administrador (0Media)</strong>
                   </div>
                   <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
                     <span>📺 Cobertura:</span>
-                    <strong style="color: #6EE7B7;" id="global-upload-tv-coverage">Todas las Pantallas Vinculadas</strong>
+                    <strong style="color: #6EE7B7;" id="global-upload-tv-coverage">Todas las Pantallas
+                      Vinculadas</strong>
                   </div>
                   <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
                     <span>⚡ Prioridad:</span>
@@ -643,7 +719,8 @@
                   </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary" id="btn-submit-global-ad" style="padding: 12px 20px; font-size: 0.95rem; justify-content: center; gap: 8px; margin-top: 4px; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);">
+                <button type="submit" class="btn btn-primary" id="btn-submit-global-ad"
+                  style="padding: 12px 20px; font-size: 0.95rem; justify-content: center; gap: 8px; margin-top: 4px; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);">
                   <span>🚀</span> Publicar en Todas las Pantallas
                 </button>
               </div>
@@ -656,7 +733,8 @@
           <div>
             <h3 class="section-title">Publicidades Generales en Emisión</h3>
             <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
-              Estas publicidades se están reproduciendo activamente en todos los televisores vinculados. Puedes modificar su duración o retirarlas en cualquier momento.
+              Estas publicidades se están reproduciendo activamente en todos los televisores vinculados. Puedes
+              modificar su duración o retirarlas en cualquier momento.
             </p>
           </div>
         </div>
@@ -676,12 +754,14 @@
         <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
           <span>📺</span> Pantallas Disponibles para Publicitar
         </h3>
-        <button type="button" class="modal-close-btn" id="btn-close-available-devices-modal" title="Cerrar">&times;</button>
+        <button type="button" class="modal-close-btn" id="btn-close-available-devices-modal"
+          title="Cerrar">&times;</button>
       </div>
 
       <div class="modal-body" style="gap: 14px; max-height: 70vh; overflow-y: auto;">
         <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">
-          Explora los televisores activos en la red con sus especificaciones, tarifas y cupos comerciales. Vincúlate a las pantallas donde desees mostrar tu publicidad:
+          Explora los televisores activos en la red con sus especificaciones, tarifas y cupos comerciales. Vincúlate a
+          las pantallas donde desees mostrar tu publicidad:
         </p>
 
         <div id="available-devices-list" style="display: flex; flex-direction: column; gap: 12px;">
@@ -724,11 +804,13 @@
           <div class="form-group-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
             <div class="form-group">
               <label class="form-label" for="input-device-name">📺 Nombre:</label>
-              <input type="text" id="input-device-name" class="form-input" placeholder="Ej. TV Pasillo PB" required value="Mi Pantalla TV">
+              <input type="text" id="input-device-name" class="form-input" placeholder="Ej. TV Pasillo PB" required
+                value="Mi Pantalla TV">
             </div>
             <div class="form-group">
               <label class="form-label" for="input-device-location">📍 Ubicación:</label>
-              <input type="text" id="input-device-location" class="form-input" placeholder="Ej. Planta Baja" required value="Sala Principal">
+              <input type="text" id="input-device-location" class="form-input" placeholder="Ej. Planta Baja" required
+                value="Sala Principal">
             </div>
           </div>
 
@@ -736,7 +818,8 @@
           <div class="form-group-grid" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 10px;">
             <div class="form-group">
               <label class="form-label" for="input-device-tariff">💵 Tarifa Comercial:</label>
-              <input type="text" id="input-device-tariff" class="form-input" placeholder="Ej. $50.00 / mes" value="$50.00 / mes">
+              <input type="text" id="input-device-tariff" class="form-input" placeholder="Ej. $50.00 / mes"
+                value="$50.00 / mes">
             </div>
             <div class="form-group">
               <label class="form-label" for="input-device-max-slots">📊 Cupo Máximo:</label>
@@ -745,14 +828,17 @@
           </div>
 
           <!-- CREDENCIALES DE ACCESO DEL USUARIO PARA ESTE TV -->
-          <div class="form-group-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px;">
+          <div class="form-group-grid"
+            style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px;">
             <div class="form-group">
               <label class="form-label" for="input-device-user">👤 Usuario de este TV (opcional):</label>
-              <input type="text" id="input-device-user" class="form-input" placeholder="ej. cliente_pizzeria" autocomplete="off">
+              <input type="text" id="input-device-user" class="form-input" placeholder="ej. cliente_pizzeria"
+                autocomplete="off">
             </div>
             <div class="form-group">
               <label class="form-label" for="input-device-pass">🔑 Contraseña de acceso:</label>
-              <input type="password" id="input-device-pass" class="form-input" placeholder="••••••••" autocomplete="new-password">
+              <input type="password" id="input-device-pass" class="form-input" placeholder="••••••••"
+                autocomplete="new-password">
             </div>
           </div>
         </div>
@@ -784,13 +870,15 @@
 
           <div class="form-group">
             <label class="form-label" for="input-ad-title">Título o Nombre de la Publicidad:</label>
-            <input type="text" id="input-ad-title" class="form-input" placeholder="Ej. Promoción 2x1 Viernes de Cervezas" required>
+            <input type="text" id="input-ad-title" class="form-input"
+              placeholder="Ej. Promoción 2x1 Viernes de Cervezas" required>
           </div>
 
           <div class="form-group-grid">
             <div class="form-group">
               <label class="form-label" for="input-ad-type">Tipo de Contenido Detectado:</label>
-              <input type="text" id="input-ad-type" class="form-input" readonly style="color: var(--primary-cyan); font-weight: 700;">
+              <input type="text" id="input-ad-type" class="form-input" readonly
+                style="color: var(--primary-cyan); font-weight: 700;">
             </div>
 
             <div class="form-group">
@@ -815,7 +903,8 @@
           <div class="form-group-grid" style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 12px;">
             <div class="form-group">
               <label class="form-label" for="input-ad-client-name">👤 ¿A quién pertenece? (Cliente / Empresa):</label>
-              <input type="text" id="input-ad-client-name" class="form-input" placeholder="Ej. Pizzería Don Juan" required>
+              <input type="text" id="input-ad-client-name" class="form-input" placeholder="Ej. Pizzería Don Juan"
+                required>
             </div>
             <div class="form-group">
               <label class="form-label" for="input-ad-client-phone">📱 Teléfono / Contacto:</label>
@@ -835,8 +924,10 @@
             </div>
           </div>
 
-          <div id="upload-client-notice" style="display: none; padding: 10px 14px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; font-size: 0.8rem; color: #FCD34D;">
-            ℹ️ <strong>Revisión Previa:</strong> Como anunciante, tu publicidad pasará por revisión administrativa. Una vez aprobada por la administración, comenzará a proyectarse de inmediato en la pantalla seleccionada.
+          <div id="upload-client-notice"
+            style="display: none; padding: 10px 14px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; font-size: 0.8rem; color: #FCD34D;">
+            ℹ️ <strong>Revisión Previa:</strong> Como anunciante, tu publicidad pasará por revisión administrativa. Una
+            vez aprobada por la administración, comenzará a proyectarse de inmediato en la pantalla seleccionada.
           </div>
         </div>
 
@@ -861,19 +952,21 @@
       <form id="form-edit-duration">
         <div class="modal-body">
           <input type="hidden" id="edit-duration-item-id">
-          
+
           <!-- Mini preview of selected ad -->
           <div class="duration-item-preview-card">
             <div class="duration-item-preview-thumb" id="duration-modal-thumb"></div>
             <div class="duration-item-preview-details">
-              <strong id="duration-modal-title" style="color: #FFF; font-size: 0.95rem; display: block; margin-bottom: 3px;">Título de Anuncio</strong>
+              <strong id="duration-modal-title"
+                style="color: #FFF; font-size: 0.95rem; display: block; margin-bottom: 3px;">Título de Anuncio</strong>
               <div style="font-size: 0.78rem; color: var(--text-muted);" id="duration-modal-meta">FOTO • Televisor</div>
             </div>
           </div>
 
           <!-- Interactive duration selector: ONLY 7 requested options -->
           <div class="duration-edit-box" style="text-align: center;">
-            <label class="form-label" style="text-align: center; font-size: 0.88rem; margin-bottom: 14px; display: block;">
+            <label class="form-label"
+              style="text-align: center; font-size: 0.88rem; margin-bottom: 14px; display: block;">
               Selecciona el tiempo de visualización:
             </label>
             <input type="hidden" id="input-single-duration" value="15">
@@ -885,10 +978,14 @@
             </div>
           </div>
 
-          <div style="margin-top: 16px; padding: 12px 14px; background: rgba(30, 41, 59, 0.6); border: 1px solid var(--border-subtle); border-radius: 8px;">
-            <label style="display: flex; align-items: center; gap: 9px; font-size: 0.82rem; color: var(--text-main); cursor: pointer; user-select: none;">
-              <input type="checkbox" id="check-apply-duration-all" style="accent-color: #2563EB; width: 17px; height: 17px; cursor: pointer;">
-              <span>Aplicar también esta misma duración a <strong>todos los demás anuncios</strong> de este televisor</span>
+          <div
+            style="margin-top: 16px; padding: 12px 14px; background: rgba(30, 41, 59, 0.6); border: 1px solid var(--border-subtle); border-radius: 8px;">
+            <label
+              style="display: flex; align-items: center; gap: 9px; font-size: 0.82rem; color: var(--text-main); cursor: pointer; user-select: none;">
+              <input type="checkbox" id="check-apply-duration-all"
+                style="accent-color: #2563EB; width: 17px; height: 17px; cursor: pointer;">
+              <span>Aplicar también esta misma duración a <strong>todos los demás anuncios</strong> de este
+                televisor</span>
             </label>
           </div>
         </div>
@@ -914,7 +1011,8 @@
         <div class="full-media-viewer" id="full-media-viewer">
           <!-- Full image or video dynamically loaded -->
         </div>
-        <div class="preview-meta-row" id="preview-meta-row" style="margin-top: 14px; display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted);">
+        <div class="preview-meta-row" id="preview-meta-row"
+          style="margin-top: 14px; display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted);">
           <!-- Details -->
         </div>
       </div>
@@ -923,8 +1021,10 @@
 
   <!-- ================= MODAL: INICIO DE SESIÓN — 2 OPCIONES: ADMINISTRADOR O USUARIO ================= -->
   <div class="modal-backdrop" id="login-modal" style="z-index: 99999;">
-    <div class="modal-window" style="max-width: 480px; border-color: rgba(37, 99, 235, 0.4); box-shadow: 0 20px 40px rgba(0,0,0,0.8), 0 0 25px rgba(37,99,235,0.25);">
-      <div class="modal-header" style="display: flex; align-items: center; justify-content: space-between; position: relative;">
+    <div class="modal-window"
+      style="max-width: 480px; border-color: rgba(37, 99, 235, 0.4); box-shadow: 0 20px 40px rgba(0,0,0,0.8), 0 0 25px rgba(37,99,235,0.25);">
+      <div class="modal-header"
+        style="display: flex; align-items: center; justify-content: space-between; position: relative;">
         <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
           <span>🔐</span> 0Media — Acceso al Sistema
         </h3>
@@ -946,7 +1046,8 @@
           </button>
         </div>
 
-        <div id="login-error-alert" style="display: none; padding: 10px 14px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 8px; color: #FCA5A5; font-size: 0.82rem;">
+        <div id="login-error-alert"
+          style="display: none; padding: 10px 14px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 8px; color: #FCA5A5; font-size: 0.82rem;">
           <!-- Error message -->
         </div>
 
@@ -958,16 +1059,22 @@
             </p>
 
             <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
-              <label class="form-label" style="font-size: 0.82rem; color: var(--text-muted);">Usuario Administrador</label>
-              <input type="text" id="login-username" class="form-input" placeholder="admin" value="admin" required autocomplete="username" style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 10px 12px; border-radius: 6px; font-size: 0.9rem;">
+              <label class="form-label" style="font-size: 0.82rem; color: var(--text-muted);">Usuario
+                Administrador</label>
+              <input type="text" id="login-username" class="form-input" placeholder="admin" value="admin" required
+                autocomplete="username"
+                style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 10px 12px; border-radius: 6px; font-size: 0.9rem;">
             </div>
 
             <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
               <label class="form-label" style="font-size: 0.82rem; color: var(--text-muted);">Contraseña</label>
-              <input type="password" id="login-password" class="form-input" placeholder="••••••••" required autocomplete="current-password" style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 10px 12px; border-radius: 6px; font-size: 0.9rem;">
+              <input type="password" id="login-password" class="form-input" placeholder="••••••••" required
+                autocomplete="current-password"
+                style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 10px 12px; border-radius: 6px; font-size: 0.9rem;">
             </div>
 
-            <button type="submit" class="btn btn-primary" id="btn-submit-admin-login" style="width: 100%; justify-content: center; padding: 12px; font-size: 0.95rem; margin-top: 6px;">
+            <button type="submit" class="btn btn-primary" id="btn-submit-admin-login"
+              style="width: 100%; justify-content: center; padding: 12px; font-size: 0.95rem; margin-top: 6px;">
               <span>🚀</span> Entrar al Panel de Administrador
             </button>
           </div>
@@ -993,33 +1100,43 @@
               </p>
 
               <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
-                <label class="form-label" style="font-size: 0.82rem; color: var(--text-muted);">👤 Nombre de Usuario o Correo:</label>
-                <input type="text" id="login-client-username" class="form-input" placeholder="ej. pizzerianapoles" required autocomplete="username" style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 10px 12px; border-radius: 6px; font-size: 0.9rem;">
+                <label class="form-label" style="font-size: 0.82rem; color: var(--text-muted);">👤 Nombre de Usuario o
+                  Correo:</label>
+                <input type="text" id="login-client-username" class="form-input" placeholder="ej. pizzerianapoles"
+                  required autocomplete="username"
+                  style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 10px 12px; border-radius: 6px; font-size: 0.9rem;">
               </div>
 
               <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
                 <label class="form-label" style="font-size: 0.82rem; color: var(--text-muted);">🔑 Contraseña:</label>
-                <input type="password" id="login-client-password" class="form-input" placeholder="••••••••" required autocomplete="current-password" style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 10px 12px; border-radius: 6px; font-size: 0.9rem;">
+                <input type="password" id="login-client-password" class="form-input" placeholder="••••••••" required
+                  autocomplete="current-password"
+                  style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 10px 12px; border-radius: 6px; font-size: 0.9rem;">
               </div>
 
               <!-- OPCIÓN DE ACCESO DIRECTO A PANTALLA ESPECÍFICA (LEGACY COMPATIBLE) -->
               <div id="login-tv-select-wrap" style="display: none; flex-direction: column; gap: 6px;">
-                <label class="form-label" style="font-size: 0.82rem; color: var(--text-muted);">📺 Televisor asignado:</label>
-                <select id="login-tv-select" class="form-input" style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem;">
+                <label class="form-label" style="font-size: 0.82rem; color: var(--text-muted);">📺 Televisor
+                  asignado:</label>
+                <select id="login-tv-select" class="form-input"
+                  style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem;">
                   <option value="">Cargando pantallas disponibles...</option>
                 </select>
               </div>
 
               <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2px;">
-                <button type="button" id="btn-toggle-tv-direct-login" style="background: none; border: none; color: #93C5FD; font-size: 0.75rem; cursor: pointer; text-decoration: underline;">
+                <button type="button" id="btn-toggle-tv-direct-login"
+                  style="background: none; border: none; color: #93C5FD; font-size: 0.75rem; cursor: pointer; text-decoration: underline;">
                   Acceder directo por TV
                 </button>
-                <button type="button" id="btn-switch-to-register" style="background: none; border: none; color: #60A5FA; font-size: 0.78rem; cursor: pointer; font-weight: 600;">
+                <button type="button" id="btn-switch-to-register"
+                  style="background: none; border: none; color: #60A5FA; font-size: 0.78rem; cursor: pointer; font-weight: 600;">
                   ¿No tienes cuenta? Regístrate gratis
                 </button>
               </div>
 
-              <button type="submit" class="btn btn-primary" id="btn-submit-user-login" style="width: 100%; justify-content: center; padding: 12px; font-size: 0.95rem; margin-top: 4px; background: linear-gradient(135deg, #4F46E5, #2563EB);">
+              <button type="submit" class="btn btn-primary" id="btn-submit-user-login"
+                style="width: 100%; justify-content: center; padding: 12px; font-size: 0.95rem; margin-top: 4px; background: linear-gradient(135deg, #4F46E5, #2563EB);">
                 <span>🎬</span> Iniciar Sesión en Mi Panel
               </button>
             </div>
@@ -1028,36 +1145,49 @@
           <!-- SUB-FORMULARIO B: CREAR CUENTA DE ANUNCIANTE (SIN APK) -->
           <form id="form-user-register" style="display: none;">
             <div style="display: flex; flex-direction: column; gap: 10px;">
-              <div style="padding: 8px 12px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; font-size: 0.78rem; color: #93C5FD;">
-                💡 <strong>Acceso 100% Web:</strong> Sin necesidad de instalar APK. Crea tu cuenta, elige la pantalla y sube tus anuncios directamente desde tu navegador.
+              <div
+                style="padding: 8px 12px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; font-size: 0.78rem; color: #93C5FD;">
+                💡 <strong>Acceso 100% Web:</strong> Sin necesidad de instalar APK. Crea tu cuenta, elige la pantalla y
+                sube tus anuncios directamente desde tu navegador.
               </div>
 
               <div class="form-group-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                 <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
-                  <label class="form-label" style="font-size: 0.78rem; color: var(--text-muted);">Empresa / Negocio:</label>
-                  <input type="text" id="reg-company" class="form-input" placeholder="ej. Pizzería Nápoles" required style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 8px 10px; border-radius: 6px; font-size: 0.85rem;">
+                  <label class="form-label" style="font-size: 0.78rem; color: var(--text-muted);">Empresa /
+                    Negocio:</label>
+                  <input type="text" id="reg-company" class="form-input" placeholder="ej. Pizzería Nápoles" required
+                    style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 8px 10px; border-radius: 6px; font-size: 0.85rem;">
                 </div>
                 <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
-                  <label class="form-label" style="font-size: 0.78rem; color: var(--text-muted);">Teléfono / WhatsApp:</label>
-                  <input type="tel" id="reg-phone" class="form-input" placeholder="ej. 0991234567" required style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 8px 10px; border-radius: 6px; font-size: 0.85rem;">
+                  <label class="form-label" style="font-size: 0.78rem; color: var(--text-muted);">Teléfono /
+                    WhatsApp:</label>
+                  <input type="tel" id="reg-phone" class="form-input" placeholder="ej. 0991234567" required
+                    style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 8px 10px; border-radius: 6px; font-size: 0.85rem;">
                 </div>
               </div>
 
               <div class="form-group-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                 <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
-                  <label class="form-label" style="font-size: 0.78rem; color: var(--text-muted);">Nombre de Usuario:</label>
-                  <input type="text" id="reg-username" class="form-input" placeholder="ej. napoles" required autocomplete="username" style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 8px 10px; border-radius: 6px; font-size: 0.85rem;">
+                  <label class="form-label" style="font-size: 0.78rem; color: var(--text-muted);">Nombre de
+                    Usuario:</label>
+                  <input type="text" id="reg-username" class="form-input" placeholder="ej. napoles" required
+                    autocomplete="username"
+                    style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 8px 10px; border-radius: 6px; font-size: 0.85rem;">
                 </div>
                 <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
                   <label class="form-label" style="font-size: 0.78rem; color: var(--text-muted);">Contraseña:</label>
-                  <input type="password" id="reg-password" class="form-input" placeholder="••••••••" required autocomplete="new-password" style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 8px 10px; border-radius: 6px; font-size: 0.85rem;">
+                  <input type="password" id="reg-password" class="form-input" placeholder="••••••••" required
+                    autocomplete="new-password"
+                    style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 8px 10px; border-radius: 6px; font-size: 0.85rem;">
                 </div>
               </div>
 
               <!-- SELECTOR DE PANTALLA DISPONIBLE Y CARACTERÍSTICAS -->
               <div class="form-group" style="display: flex; flex-direction: column; gap: 5px;">
-                <label class="form-label" style="font-size: 0.78rem; color: var(--text-muted);">📺 Selecciona el televisor donde deseas publicitar:</label>
-                <select id="reg-tv-select" class="form-input" style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 8px 10px; border-radius: 6px; font-size: 0.85rem;">
+                <label class="form-label" style="font-size: 0.78rem; color: var(--text-muted);">📺 Selecciona el
+                  televisor donde deseas publicitar:</label>
+                <select id="reg-tv-select" class="form-input"
+                  style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); color: #FFF; padding: 8px 10px; border-radius: 6px; font-size: 0.85rem;">
                   <option value="">Cargando pantallas disponibles...</option>
                 </select>
               </div>
@@ -1083,12 +1213,14 @@
               </div>
 
               <div style="display: flex; justify-content: flex-end;">
-                <button type="button" id="btn-switch-to-login" style="background: none; border: none; color: #93C5FD; font-size: 0.78rem; cursor: pointer; text-decoration: underline;">
+                <button type="button" id="btn-switch-to-login"
+                  style="background: none; border: none; color: #93C5FD; font-size: 0.78rem; cursor: pointer; text-decoration: underline;">
                   ¿Ya tienes cuenta? Inicia sesión aquí
                 </button>
               </div>
 
-              <button type="submit" class="btn btn-primary" id="btn-submit-user-register" style="width: 100%; justify-content: center; padding: 12px; font-size: 0.95rem; margin-top: 4px; background: linear-gradient(135deg, #10B981, #059669); border-color: #059669;">
+              <button type="submit" class="btn btn-primary" id="btn-submit-user-register"
+                style="width: 100%; justify-content: center; padding: 12px; font-size: 0.95rem; margin-top: 4px; background: linear-gradient(135deg, #10B981, #059669); border-color: #059669;">
                 <span>🚀</span> Crear Cuenta y Empezar a Publicitar
               </button>
             </div>
@@ -1097,7 +1229,8 @@
       </div>
 
       <div class="modal-footer" style="padding: 10px 18px; justify-content: center;">
-        <span style="font-size: 0.75rem; color: var(--text-muted);">0Media Digital Signage • Sistema de Pantallas y Publicidad</span>
+        <span style="font-size: 0.75rem; color: var(--text-muted);">0Media Digital Signage • Sistema de Pantallas y
+          Publicidad</span>
       </div>
     </div>
   </div>
@@ -1132,14 +1265,17 @@
           </div>
 
           <!-- CREDENCIALES DE ACCESO DEL CLIENTE PARA ESTE TV -->
-          <div class="form-group-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 4px;">
+          <div class="form-group-grid"
+            style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 4px;">
             <div class="form-group">
               <label class="form-label" for="edit-device-user">👤 Usuario de este TV:</label>
-              <input type="text" id="edit-device-user" class="form-input" placeholder="ej. cliente_pizzeria" autocomplete="off">
+              <input type="text" id="edit-device-user" class="form-input" placeholder="ej. cliente_pizzeria"
+                autocomplete="off">
             </div>
             <div class="form-group">
               <label class="form-label" for="edit-device-pass">🔑 Clave (dejar vacío para mantener):</label>
-              <input type="password" id="edit-device-pass" class="form-input" placeholder="••••••••" autocomplete="new-password">
+              <input type="password" id="edit-device-pass" class="form-input" placeholder="••••••••"
+                autocomplete="new-password">
             </div>
           </div>
         </div>
@@ -1158,4 +1294,5 @@
 
   <script src="app.js?v=2.6"></script>
 </body>
+
 </html>

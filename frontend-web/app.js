@@ -3074,11 +3074,132 @@ document.addEventListener('DOMContentLoaded', () => {
   const globalDurationPresets = document.getElementById('global-duration-presets');
   const btnSubmitGlobalAd = document.getElementById('btn-submit-global-ad');
   const globalUploadTvCoverage = document.getElementById('global-upload-tv-coverage');
+  const checkAllDevicesGlobal = document.getElementById('check-all-devices-global');
+  const globalDevicesSelectorBar = document.getElementById('global-devices-selector-bar');
+  const globalDevicesHelpText = document.getElementById('global-devices-help-text');
 
+  let globalSelectedDeviceIds = new Set();
   let globalPendingFile = null;
   let globalPendingDataUrl = null;
   let globalDetectedType = 'IMAGE';
   let globalDetectedTag = 'FOTO 4K';
+
+  function renderGlobalDevicesBar() {
+    if (!globalDevicesSelectorBar) return;
+    const pairedDevs = (devices || []).filter(d => d.isPaired);
+    globalDevicesSelectorBar.innerHTML = '';
+
+    if (pairedDevs.length === 0) {
+      globalDevicesSelectorBar.innerHTML = `
+        <div style="font-size: 0.8rem; color: var(--text-muted); padding: 8px 4px;">
+          No hay televisores vinculados activos en este momento.
+        </div>
+      `;
+      updateGlobalDevicesBarUI();
+      return;
+    }
+
+    if (checkAllDevicesGlobal && checkAllDevicesGlobal.checked) {
+      globalSelectedDeviceIds = new Set(pairedDevs.map(d => d.id));
+    }
+
+    pairedDevs.forEach(dev => {
+      const chip = document.createElement('div');
+      const isSelected = Boolean(checkAllDevicesGlobal && checkAllDevicesGlobal.checked) || globalSelectedDeviceIds.has(dev.id);
+      chip.className = `global-device-chip ${isSelected ? 'selected' : ''}`;
+      chip.setAttribute('data-device-id', dev.id);
+
+      chip.innerHTML = `
+        <div class="chip-check">${isSelected ? '✓' : ''}</div>
+        <div class="chip-info">
+          <span class="chip-name">📺 ${dev.name}</span>
+          <span class="chip-loc">📍 ${dev.location || 'Pantalla TV'}</span>
+        </div>
+      `;
+
+      chip.addEventListener('click', () => {
+        if (checkAllDevicesGlobal && checkAllDevicesGlobal.checked) {
+          checkAllDevicesGlobal.checked = false;
+          // Al hacer clic en un dispositivo específico, se selecciona únicamente ese
+          globalSelectedDeviceIds = new Set([dev.id]);
+        } else {
+          if (globalSelectedDeviceIds.has(dev.id)) {
+            globalSelectedDeviceIds.delete(dev.id);
+          } else {
+            globalSelectedDeviceIds.add(dev.id);
+          }
+          if (globalSelectedDeviceIds.size === pairedDevs.length && pairedDevs.length > 0) {
+            if (checkAllDevicesGlobal) checkAllDevicesGlobal.checked = true;
+          }
+        }
+        updateGlobalDevicesBarUI();
+      });
+
+      globalDevicesSelectorBar.appendChild(chip);
+    });
+
+    updateGlobalDevicesBarUI();
+  }
+
+  function updateGlobalDevicesBarUI() {
+    const pairedDevs = (devices || []).filter(d => d.isPaired);
+    const isAll = Boolean(checkAllDevicesGlobal && checkAllDevicesGlobal.checked);
+
+    if (globalDevicesSelectorBar) {
+      globalDevicesSelectorBar.querySelectorAll('.global-device-chip').forEach(chip => {
+        const devId = chip.getAttribute('data-device-id');
+        const isSelected = isAll || globalSelectedDeviceIds.has(devId);
+        if (isSelected) {
+          chip.classList.add('selected');
+          const checkEl = chip.querySelector('.chip-check');
+          if (checkEl) checkEl.textContent = '✓';
+        } else {
+          chip.classList.remove('selected');
+          const checkEl = chip.querySelector('.chip-check');
+          if (checkEl) checkEl.textContent = '';
+        }
+      });
+    }
+
+    // Actualizar texto de cobertura
+    if (globalUploadTvCoverage) {
+      if (isAll) {
+        globalUploadTvCoverage.textContent = `Todas las Pantallas Vinculadas (${pairedDevs.length} TVs)`;
+        globalUploadTvCoverage.style.color = '#6EE7B7';
+      } else if (globalSelectedDeviceIds.size > 0) {
+        const selectedNames = pairedDevs.filter(d => globalSelectedDeviceIds.has(d.id)).map(d => d.name);
+        const namesText = selectedNames.length <= 2 ? ` (${selectedNames.join(', ')})` : ` (${selectedNames.length} TVs)`;
+        globalUploadTvCoverage.textContent = `${globalSelectedDeviceIds.size} de ${pairedDevs.length} Pantallas Seleccionadas${namesText}`;
+        globalUploadTvCoverage.style.color = '#93C5FD';
+      } else {
+        globalUploadTvCoverage.textContent = '⚠️ Ninguna pantalla seleccionada (elige al menos una)';
+        globalUploadTvCoverage.style.color = '#FCA5A5';
+      }
+    }
+
+    // Actualizar texto del botón de subida
+    if (btnSubmitGlobalAd && !btnSubmitGlobalAd.disabled) {
+      if (isAll) {
+        btnSubmitGlobalAd.innerHTML = `<span>🚀</span> Publicar en Todos los Dispositivos`;
+      } else if (globalSelectedDeviceIds.size > 0) {
+        btnSubmitGlobalAd.innerHTML = `<span>🚀</span> Publicar en ${globalSelectedDeviceIds.size} Dispositivo(s) Seleccionado(s)`;
+      } else {
+        btnSubmitGlobalAd.innerHTML = `<span>⚠️</span> Selecciona al menos un dispositivo`;
+      }
+    }
+  }
+
+  if (checkAllDevicesGlobal) {
+    checkAllDevicesGlobal.addEventListener('change', () => {
+      const pairedDevs = (devices || []).filter(d => d.isPaired);
+      if (checkAllDevicesGlobal.checked) {
+        globalSelectedDeviceIds = new Set(pairedDevs.map(d => d.id));
+      } else {
+        globalSelectedDeviceIds.clear();
+      }
+      updateGlobalDevicesBarUI();
+    });
+  }
 
   function resetGlobalAdForm() {
     globalPendingFile = null;
@@ -3102,6 +3223,9 @@ document.addEventListener('DOMContentLoaded', () => {
         else btn.classList.remove('active');
       });
     }
+    if (checkAllDevicesGlobal) checkAllDevicesGlobal.checked = true;
+    globalSelectedDeviceIds.clear();
+    renderGlobalDevicesBar();
   }
 
   function handleGlobalFileSelect(file) {
@@ -3215,12 +3339,20 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
+      const pairedDevs = (devices || []).filter(d => d.isPaired);
+      const isAll = Boolean(checkAllDevicesGlobal && checkAllDevicesGlobal.checked);
+      if (!isAll && globalSelectedDeviceIds.size === 0) {
+        showToast('⚠️ Debes seleccionar al menos un televisor de destino o marcar "En todos los dispositivos".', '#EF4444');
+        return;
+      }
+
+      const selectedIds = isAll ? ['ALL'] : Array.from(globalSelectedDeviceIds);
       const title = (inputGlobalAdTitle ? inputGlobalAdTitle.value.trim() : '') || 'Publicidad General 0Media';
       const duration = (inputGlobalAdDuration ? parseInt(inputGlobalAdDuration.value, 10) : 15) || 15;
 
       if (btnSubmitGlobalAd) {
         btnSubmitGlobalAd.disabled = true;
-        btnSubmitGlobalAd.innerHTML = `<span>⏳</span> Transmitiendo a Todas las Pantallas...`;
+        btnSubmitGlobalAd.innerHTML = `<span>⏳</span> Transmitiendo con prioridad...`;
       }
 
       try {
@@ -3230,8 +3362,10 @@ document.addEventListener('DOMContentLoaded', () => {
           body: JSON.stringify({
             title: title,
             durationSeconds: duration,
-            targetTvId: 'ALL',
-            isGlobal: true,
+            targetTvId: isAll ? 'ALL' : (selectedIds.length === 1 ? selectedIds[0] : 'ALL'),
+            targetTvIds: selectedIds,
+            allDevices: isAll,
+            isGlobal: isAll,
             isPriority: true,
             mediaType: globalDetectedType,
             mediaTag: globalDetectedTag,
@@ -3243,7 +3377,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const data = await res.json();
         if (data.success) {
-          showToast(`🎉 ¡Publicidad General "${title}" transmitiéndose con prioridad máxima en todas las pantallas!`, '#10B981');
+          const successMsg = isAll
+            ? `🎉 ¡Publicidad General "${title}" transmitiéndose en TODOS los televisores!`
+            : `🎉 ¡Publicidad General "${title}" transmitiéndose en ${selectedIds.length} televisor(es) seleccionado(s)!`;
+          showToast(successMsg, '#10B981');
           resetGlobalAdForm();
           await loadDevicesFromBackend();
           await loadAndRenderGlobalAds();
@@ -3255,7 +3392,7 @@ document.addEventListener('DOMContentLoaded', () => {
       } finally {
         if (btnSubmitGlobalAd) {
           btnSubmitGlobalAd.disabled = false;
-          btnSubmitGlobalAd.innerHTML = `<span>🚀</span> Publicar en Todas las Pantallas`;
+          updateGlobalDevicesBarUI();
         }
       }
     });
@@ -3270,6 +3407,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function loadAndRenderGlobalAds() {
+    renderGlobalDevicesBar();
     if (!globalAdsContainer) return;
 
     let globalAds = [];
@@ -3297,7 +3435,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (globalAdsScreenCount) globalAdsScreenCount.textContent = totalPaired;
     if (globalAdsTotalCount) globalAdsTotalCount.textContent = globalAds.length;
-    if (globalUploadTvCoverage) globalUploadTvCoverage.textContent = `Todas las Pantallas Vinculadas (${totalPaired} TVs)`;
+    updateGlobalDevicesBarUI();
 
     if (badgeGlobalAdsCount) {
       if (globalAds.length > 0) {
@@ -3358,7 +3496,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
 
           <div style="font-size: 0.82rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px;">
-            <div>📺 Cobertura: <strong style="color: #6EE7B7;">Todas las Pantallas (${ad.activeDevicesCount || totalPaired} TVs)</strong></div>
+            <div>📺 Cobertura: <strong style="color: #6EE7B7;">${ad.isAllDevices || ad.activeDevicesCount >= totalPaired ? `Todas las Pantallas (${totalPaired} TVs)` : `${ad.activeDevicesCount} Pantalla(s)${ad.targetDeviceNames && ad.targetDeviceNames.length ? ' (' + ad.targetDeviceNames.join(', ') + ')' : ''}`}</strong></div>
             <div>⚡ Reproducción: <strong style="color: #FCD34D;">Al inicio del carrusel en cada TV</strong></div>
           </div>
 
