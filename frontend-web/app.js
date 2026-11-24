@@ -318,7 +318,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const sidebarName = document.getElementById('sidebar-user-name');
     const sidebarRole = document.getElementById('sidebar-user-role');
 
+    const logoutButtons = document.querySelectorAll('.btn-logout-action, #btn-sidebar-logout, #btn-admin-logout');
+
     if (currentUser) {
+      // Al loguearse (como Admin o como Usuario), mostrar siempre el botón de cerrar sesión en el sidebar
+      logoutButtons.forEach(b => {
+        b.style.display = 'inline-flex';
+      });
+
       if (currentUser.role === 'ADMIN') {
         if (roleIcon) roleIcon.textContent = '👑';
         if (displayName) displayName.textContent = 'Admin Maestro';
@@ -342,7 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (roleIcon) roleIcon.textContent = '📺';
         const tvTitle = currentUser.deviceName || currentUser.company || currentUser.username;
         if (displayName) displayName.textContent = tvTitle;
-        if (sidebarAvatar) sidebarAvatar.textContent = 'TV';
+        if (sidebarAvatar) sidebarAvatar.textContent = (currentUser.username || 'TV').substring(0, 2).toUpperCase();
         if (sidebarName) sidebarName.textContent = tvTitle;
         if (sidebarRole) sidebarRole.textContent = 'Usuario Anunciante';
         if (adminNavGroup) adminNavGroup.style.display = 'none';
@@ -358,7 +365,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (inputClientPhone && currentUser.phone) {
           inputClientPhone.value = currentUser.phone;
         }
-        document.querySelectorAll('#btn-admin-logout').forEach(b => b.style.display = 'inline-flex');
         renderUserPortal();
       }
     } else {
@@ -371,7 +377,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (userNavGroup) userNavGroup.style.display = 'none';
       if (btnPairModal) btnPairModal.style.display = 'none';
       if (btnRevokeSession) btnRevokeSession.style.display = 'none';
-      document.querySelectorAll('#btn-admin-logout').forEach(b => b.style.display = 'none');
+      
+      // Ocultar botón de cerrar sesión si no hay usuario autenticado
+      logoutButtons.forEach(b => {
+        b.style.display = 'none';
+      });
     }
   }
 
@@ -2416,8 +2426,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Cerrar Sesión para Administrador y Usuario
-  document.querySelectorAll('#btn-admin-logout').forEach(btn => {
+  // Cerrar Sesión para Administrador y Usuario (Sidebar y Topbar)
+  document.querySelectorAll('#btn-sidebar-logout, #btn-admin-logout, .btn-logout-action').forEach(btn => {
     btn.addEventListener('click', async () => {
       try {
         await apiFetch('/api/v1/admin/logout', { method: 'POST' });
