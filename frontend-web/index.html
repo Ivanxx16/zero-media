@@ -13,6 +13,17 @@
 
 <body>
 
+  <!-- ================= FONDO GLOBAL LIQUID GLASS ================= -->
+  <div class="liquid-glass-backdrop" aria-hidden="true">
+    <div class="liquid-glass-orb orb-primary"></div>
+    <div class="liquid-glass-orb orb-emerald"></div>
+    <div class="liquid-glass-orb orb-purple"></div>
+    <div class="liquid-glass-orb orb-cyan"></div>
+    <div class="liquid-glass-orb orb-indigo"></div>
+    <div class="liquid-glass-mesh"></div>
+    <div class="liquid-glass-frost"></div>
+  </div>
+
   <!-- ================= SIDEBAR NAVIGATION (SOLO 2 OPCIONES) ================= -->
   <aside class="sidebar">
     <div class="sidebar-header">
@@ -98,7 +109,7 @@
       <div class="topbar-right">
         <!-- Reloj Maestro de Emisión DOOH -->
         <div class="master-clock" id="master-clock"
-          style="display: flex; align-items: center; gap: 6px; padding: 5px 12px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 0.75rem; font-family: var(--font-mono); color: var(--text-secondary);">
+          style="display: flex; align-items: center; gap: 6px; padding: 5px 12px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: var(--radius-sm); font-size: 0.75rem; font-family: var(--font-mono); color: var(--text-secondary);">
           <span style="color: var(--primary-light);">⏱️</span>
           <span id="master-clock-time">--:--:--</span>
         </div>
@@ -110,7 +121,7 @@
 
         <!-- Perfil del Usuario Activo -->
         <div class="user-profile-badge" id="user-profile-badge"
-          style="display: flex; align-items: center; gap: 8px; padding: 5px 12px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 0.8rem; color: #FFF;">
+          style="display: flex; align-items: center; gap: 8px; padding: 5px 12px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: var(--radius-sm); font-size: 0.8rem; color: #FFF;">
           <span id="user-role-icon">👋</span>
           <strong id="user-display-name">Visitante</strong>
         </div>
@@ -138,15 +149,6 @@
 
       <!-- ================= VISTA 0: BIENVENIDOS A ZERO MEDIA ================= -->
       <section class="view-section active" id="view-welcome">
-        <!-- FONDO AMBIENTAL LIQUID GLASS (ORBES FLUIDOS Y REFRACCIÓN DE CRISTAL) -->
-        <div class="liquid-glass-backdrop" aria-hidden="true">
-          <div class="liquid-glass-orb orb-primary"></div>
-          <div class="liquid-glass-orb orb-emerald"></div>
-          <div class="liquid-glass-orb orb-purple"></div>
-          <div class="liquid-glass-orb orb-cyan"></div>
-          <div class="liquid-glass-mesh"></div>
-          <div class="liquid-glass-frost"></div>
-        </div>
 
         <div class="welcome-hero-container">
 
