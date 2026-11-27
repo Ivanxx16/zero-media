@@ -245,7 +245,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (modal) {
       modal.classList.add('open');
       loadPublicScreensForLogin();
+      const inputUser = document.getElementById('login-username');
+      if (inputUser && !inputUser.value) inputUser.value = 'admin';
       const inputPass = document.getElementById('login-password');
+      if (inputPass && !inputPass.value) inputPass.value = 'admin';
       if (inputPass) setTimeout(() => inputPass.focus(), 150);
     }
   }
