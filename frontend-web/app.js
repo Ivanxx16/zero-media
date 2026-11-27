@@ -248,8 +248,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const inputUser = document.getElementById('login-username');
       if (inputUser && !inputUser.value) inputUser.value = 'admin';
       const inputPass = document.getElementById('login-password');
-      if (inputPass && !inputPass.value) inputPass.value = 'admin';
-      if (inputPass) setTimeout(() => inputPass.focus(), 150);
+      if (inputPass) {
+        if (!inputPass.value) inputPass.value = 'admin';
+        setTimeout(() => {
+          inputPass.focus();
+          inputPass.select();
+        }, 150);
+      }
     }
   }
 
@@ -2293,14 +2298,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 1. Enviar formulario de Administrador
   if (formAdminLogin) {
+    const inputAdminPass = document.getElementById('login-password');
+    if (inputAdminPass) {
+      // Al hacer clic o ganar foco, si tiene la contraseña por defecto 'admin', borrarla para no mezclar texto
+      inputAdminPass.addEventListener('click', function () {
+        if (this.value === 'admin') {
+          this.value = '';
+        }
+      });
+      inputAdminPass.addEventListener('focus', function () {
+        if (this.value === 'admin') {
+          this.value = '';
+        }
+      });
+    }
+
     formAdminLogin.addEventListener('submit', async (e) => {
       e.preventDefault();
       const usernameInput = document.getElementById('login-username');
       const passwordInput = document.getElementById('login-password');
       const submitBtn = document.getElementById('btn-submit-admin-login');
 
-      const username = usernameInput ? usernameInput.value.trim() : 'admin';
-      const password = passwordInput ? passwordInput.value : '';
+      const username = usernameInput && usernameInput.value.trim() ? usernameInput.value.trim() : 'admin';
+      const password = passwordInput && passwordInput.value ? passwordInput.value : 'admin';
 
       try {
         if (submitBtn) {
