@@ -269,18 +269,25 @@ async function uploadToS3(key, buffer, mimeType) {
   }
 }
 
-// Detección automática multi-entorno para FRONTEND, UPLOADS y APK
+// Detección automática multi-entorno para FRONTEND, LANDING, UPLOADS y APK
 const FRONTEND_DIR = fs.existsSync(path.join(__dirname, '..', 'frontend-web'))
   ? path.join(__dirname, '..', 'frontend-web')
   : (fs.existsSync(path.join(__dirname, 'frontend-web')) 
       ? path.join(__dirname, 'frontend-web') 
       : path.join(__dirname, 'admin-panel'));
 
+const LANDING_DIR = fs.existsSync(path.join(__dirname, '..', 'landing'))
+  ? path.join(__dirname, '..', 'landing')
+  : (fs.existsSync(path.join(__dirname, 'landing')) 
+      ? path.join(__dirname, 'landing') 
+      : path.join(__dirname, '..', 'landing'));
+
 const UPLOADS_DIR = fs.existsSync(path.join(__dirname, 'uploads'))
   ? path.join(__dirname, 'uploads')
   : path.join(__dirname, '..', 'backend', 'uploads');
 
 const ASSETS_DIR = path.join(FRONTEND_DIR, 'assets');
+const LANDING_ASSETS_DIR = path.join(LANDING_DIR, 'assets');
 const STATE_FILE = path.join(__dirname, 'signage_state.json');
 const DB_FILE = path.join(__dirname, 'signage.db');
 
@@ -1523,8 +1530,55 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // 2. PANEL DE ADMINISTRACIÓN WEB Y BIENVENIDA
-  if (url === '/' || url === '/admin' || url === '/admin/' || url === '/index.html' || url === '/admin/index.html' || url === '/welcome' || url === '/welcome/') {
+  // 1.5. LANDING PAGE INFORMATIVA (PRIMERA VISTA DEL SISTEMA)
+  if (url === '/' || url === '/landing' || url === '/landing/' || url === '/landing/index.html') {
+    const landingIndexPath = path.join(LANDING_DIR, 'index.html');
+    if (fs.existsSync(landingIndexPath)) {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      fs.createReadStream(landingIndexPath).pipe(res);
+      return;
+    }
+  }
+
+  if (url === '/landing/styles.css') {
+    const landingCssPath = path.join(LANDING_DIR, 'styles.css');
+    if (fs.existsSync(landingCssPath)) {
+      res.writeHead(200, { 'Content-Type': 'text/css; charset=utf-8' });
+      fs.createReadStream(landingCssPath).pipe(res);
+      return;
+    }
+  }
+
+  if (url === '/landing/app.js') {
+    const landingJsPath = path.join(LANDING_DIR, 'app.js');
+    if (fs.existsSync(landingJsPath)) {
+      res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8' });
+      fs.createReadStream(landingJsPath).pipe(res);
+      return;
+    }
+  }
+
+  if (url.startsWith('/landing/assets/')) {
+    const fileName = path.basename(url);
+    const filePath = path.join(LANDING_ASSETS_DIR, fileName);
+    const ext = path.extname(fileName).toLowerCase();
+    const mimeTypes = {
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.webp': 'image/webp',
+      '.gif': 'image/gif',
+      '.svg': 'image/svg+xml'
+    };
+    if (fs.existsSync(filePath)) {
+      res.writeHead(200, { 'Content-Type': mimeTypes[ext] || 'application/octet-stream' });
+      fs.createReadStream(filePath).pipe(res);
+      return;
+    }
+  }
+
+  // 2. PANEL DE OPERACIONES WEB Y ADMINISTRACIÓN (FRONTEND HUB)
+  if (url === '/app' || url === '/app/' || url === '/app/index.html' || url === '/admin' || url === '/admin/' || url === '/admin/index.html' || url === '/welcome' || url === '/welcome/' || url === '/panel' || url === '/panel/' || url === '/index.html') {
     const indexPath = path.join(FRONTEND_DIR, 'index.html');
     if (fs.existsSync(indexPath)) {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
@@ -1533,7 +1587,7 @@ const server = http.createServer((req, res) => {
     }
   }
 
-  if (url === '/styles.css' || url === '/admin/styles.css') {
+  if (url === '/styles.css' || url === '/admin/styles.css' || url === '/app/styles.css') {
     const cssPath = path.join(FRONTEND_DIR, 'styles.css');
     if (fs.existsSync(cssPath)) {
       res.writeHead(200, { 'Content-Type': 'text/css; charset=utf-8' });
@@ -1542,7 +1596,7 @@ const server = http.createServer((req, res) => {
     }
   }
 
-  if (url === '/app.js' || url === '/admin/app.js') {
+  if (url === '/app.js' || url === '/admin/app.js' || url === '/app/app.js') {
     const jsPath = path.join(FRONTEND_DIR, 'app.js');
     if (fs.existsSync(jsPath)) {
       res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8' });
@@ -1583,7 +1637,7 @@ const server = http.createServer((req, res) => {
   }
 
   // 5. ASSETS DEFAULT CON STREAMING
-  if (url.startsWith('/assets/') || url.startsWith('/admin/assets/')) {
+  if (url.startsWith('/assets/') || url.startsWith('/admin/assets/') || url.startsWith('/app/assets/')) {
     const fileName = path.basename(url);
     const filePath = path.join(ASSETS_DIR, fileName);
     const ext = path.extname(fileName).toLowerCase();
