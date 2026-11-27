@@ -2537,9 +2537,9 @@ body {
 
 /* ================= VISTA DE BIENVENIDA HERO: ZERO MEDIA ================= */
 .welcome-hero-container {
-  max-width: 980px;
+  max-width: 1180px;
   margin: 0 auto;
-  padding: 30px 16px 50px;
+  padding: 30px 20px 50px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2617,24 +2617,31 @@ body {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 28px;
   width: 100%;
-  max-width: 880px;
+  max-width: 1140px;
   margin-bottom: 36px;
+}
+
+@media (max-width: 860px) {
+  .welcome-cards-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .welcome-access-card {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  padding: 28px 26px;
+  padding: 36px 34px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   text-align: left;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
   box-shadow: var(--shadow-sm);
+  min-height: 480px;
 }
 
 .welcome-access-card.card-admin {
@@ -2658,19 +2665,19 @@ body {
 }
 
 .welcome-card-icon {
-  font-size: 2.2rem;
-  margin-bottom: 12px;
+  font-size: 2.6rem;
+  margin-bottom: 14px;
 }
 
 .welcome-card-badge {
   display: inline-block;
-  padding: 3px 8px;
+  padding: 4px 10px;
   border-radius: var(--radius-sm);
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
 .welcome-card-badge.admin-badge {
@@ -2686,33 +2693,34 @@ body {
 }
 
 .welcome-card-title {
-  font-size: 1.25rem;
+  font-size: 1.55rem;
   font-weight: 700;
   color: var(--text-primary);
-  margin: 0 0 10px;
+  margin: 0 0 12px;
+  letter-spacing: -0.01em;
 }
 
 .welcome-card-desc {
-  font-size: 0.88rem;
+  font-size: 1.02rem;
   color: var(--text-muted);
-  line-height: 1.5;
-  margin-bottom: 18px;
+  line-height: 1.65;
+  margin-bottom: 22px;
 }
 
 .welcome-card-features {
   list-style: none;
   padding: 0;
-  margin: 0 0 22px;
+  margin: 0 0 28px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 
 .welcome-card-features li {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.84rem;
+  gap: 10px;
+  font-size: 0.98rem;
   color: var(--text-secondary);
 }
 
@@ -2720,11 +2728,12 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   font-weight: 800;
+  flex-shrink: 0;
 }
 
 .card-admin .welcome-card-features li span {
@@ -2740,8 +2749,8 @@ body {
 .welcome-action-btn {
   width: 100%;
   justify-content: center;
-  padding: 12px 18px;
-  font-size: 0.95rem;
+  padding: 14px 22px;
+  font-size: 1.05rem;
   font-weight: 600;
   border-radius: var(--radius-sm);
   gap: 8px;
@@ -2780,11 +2789,11 @@ body {
   grid-template-columns: repeat(4, 1fr);
   gap: 14px;
   width: 100%;
-  max-width: 880px;
+  max-width: 1140px;
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  padding: 16px 20px;
+  padding: 18px 24px;
   box-shadow: var(--shadow-sm);
 }
 
