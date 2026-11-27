@@ -526,6 +526,23 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.location.hash !== '#' + targetView) {
       window.location.hash = targetView;
     }
+
+    // Asegurar que al cambiar de vista o loguearse, la pantalla inicie siempre en la parte superior absoluta
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    const contentArea = document.querySelector('.content-area');
+    if (contentArea) contentArea.scrollTop = 0;
+    const mainWrapper = document.querySelector('.main-wrapper');
+    if (mainWrapper) mainWrapper.scrollTop = 0;
+
+    requestAnimationFrame(() => {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      if (contentArea) contentArea.scrollTop = 0;
+      if (mainWrapper) mainWrapper.scrollTop = 0;
+    });
   }
 
   function handleHash() {
