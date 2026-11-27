@@ -31,6 +31,10 @@
   --status-danger: #EF4444;    /* ON AIR / Standby / Alerta / Offline */
   --status-danger-bg: rgba(239, 68, 68, 0.12);
 
+  --success: #10B981;          /* Esmeralda corporativo para clientes y estado OK */
+  --success-hover: #059669;
+  --success-subtle: rgba(16, 185, 129, 0.14);
+
   --live-emerald: #10B981;
   --on-air-red: #EF4444;
   --commercial-amber: #F59E0B;
@@ -2644,12 +2648,12 @@ body {
 }
 
 .welcome-access-card.card-user {
-  border-left: 3px solid var(--success);
+  border-left: 3px solid var(--success, #10B981);
 }
 
 .welcome-access-card.card-user:hover {
   border-color: var(--border-strong);
-  border-left-color: var(--success);
+  border-left-color: var(--success, #10B981);
   box-shadow: var(--shadow-md);
 }
 
@@ -2756,15 +2760,17 @@ body {
   border-color: var(--primary-hover);
 }
 
-.btn-user-action {
-  background: var(--success);
-  border: 1px solid var(--success);
+.btn-user-action,
+.welcome-action-btn.btn-user-action {
+  background: var(--success, #10B981);
+  border: 1px solid var(--success, #10B981);
   color: #FFF;
 }
 
-.btn-user-action:hover {
-  background: #047857;
-  border-color: #047857;
+.btn-user-action:hover,
+.welcome-action-btn.btn-user-action:hover {
+  background: var(--success-hover, #059669);
+  border-color: var(--success-hover, #059669);
 }
 
 .welcome-metrics-strip {
