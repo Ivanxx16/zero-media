@@ -3691,6 +3691,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ================= 12. INICIALIZACIÓN COMPLETA =================
+  // Reloj Maestro de Emisión DOOH
+  const clockEl = document.getElementById('master-clock-time');
+  if (clockEl) {
+    const updateMasterClock = () => {
+      const now = new Date();
+      clockEl.textContent = now.toLocaleTimeString('es-EC', { hour12: false });
+    };
+    updateMasterClock();
+    setInterval(updateMasterClock, 1000);
+  }
+
   renderDevices();
   updateStats();
   renderTvSelector();

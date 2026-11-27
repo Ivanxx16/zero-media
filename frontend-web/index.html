@@ -19,7 +19,7 @@
       <img src="assets/logo.png" alt="0Media Logo" class="brand-logo" id="sidebar-logo">
       <div class="brand-text">
         <h1>0Media Hub</h1>
-        <span>Signage Control</span>
+        <span>Digital Signage Ops</span>
       </div>
     </div>
 
@@ -32,19 +32,14 @@
 
       <!-- OPCIONES DE ADMINISTRADOR -->
       <div id="admin-nav-group" style="display: none;">
+        <div class="nav-section-label" style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); padding: 12px 14px 4px 14px;">Emisión & Hardware</div>
         <a class="nav-item" href="#devices" data-view="devices" id="nav-devices">
           <span class="icon">🖥️</span>
           <span>Pantallas en Vivo</span>
           <span class="badge-counter" id="badge-screen-count">0</span>
         </a>
 
-        <a class="nav-item" href="#approvals" data-view="approvals" id="nav-approvals">
-          <span class="icon">⏳</span>
-          <span>Aprobaciones</span>
-          <span class="badge-counter" id="badge-pending-count"
-            style="background: #F59E0B; color: #000; font-weight: 800; display: none;">0</span>
-        </a>
-
+        <div class="nav-section-label" style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); padding: 12px 14px 4px 14px;">Parrilla & DOOH</div>
         <a class="nav-item" href="#playlists" data-view="playlists" id="nav-playlists">
           <span class="icon">🎬</span>
           <span>Programación TV</span>
@@ -57,10 +52,19 @@
           <span class="badge-counter" id="badge-global-ads-count"
             style="background: #3B82F6; color: #FFF; font-weight: 700; display: none;">0</span>
         </a>
+
+        <div class="nav-section-label" style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); padding: 12px 14px 4px 14px;">Moderación</div>
+        <a class="nav-item" href="#approvals" data-view="approvals" id="nav-approvals">
+          <span class="icon">⏳</span>
+          <span>Aprobaciones</span>
+          <span class="badge-counter" id="badge-pending-count"
+            style="background: #F59E0B; color: #000; font-weight: 800; display: none;">0</span>
+        </a>
       </div>
 
       <!-- OPCIONES DE USUARIO ANUNCIANTE -->
       <div id="user-nav-group" style="display: none;">
+        <div class="nav-section-label" style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); padding: 12px 14px 4px 14px;">Portal Comercial</div>
         <a class="nav-item" href="#user-portal" data-view="user-portal" id="nav-user-portal">
           <span class="icon">📢</span>
           <span>Mi Pantalla y Publicidad</span>
@@ -92,6 +96,13 @@
       </div>
 
       <div class="topbar-right">
+        <!-- Reloj Maestro de Emisión DOOH -->
+        <div class="master-clock" id="master-clock"
+          style="display: flex; align-items: center; gap: 6px; padding: 5px 12px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 0.75rem; font-family: var(--font-mono); color: var(--text-secondary);">
+          <span style="color: var(--primary-light);">⏱️</span>
+          <span id="master-clock-time">--:--:--</span>
+        </div>
+
         <div class="system-status-pill">
           <span class="status-dot"></span>
           <span id="gateway-status-text">Backend Socket.IO Conectado</span>
@@ -99,7 +110,7 @@
 
         <!-- Perfil del Usuario Activo -->
         <div class="user-profile-badge" id="user-profile-badge"
-          style="display: flex; align-items: center; gap: 8px; padding: 6px 14px; background: rgba(30, 41, 59, 0.7); border: 1px solid var(--border-subtle); border-radius: 20px; font-size: 0.82rem; color: #FFF;">
+          style="display: flex; align-items: center; gap: 8px; padding: 5px 12px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 0.8rem; color: #FFF;">
           <span id="user-role-icon">👑</span>
           <strong id="user-display-name">Administrador</strong>
         </div>

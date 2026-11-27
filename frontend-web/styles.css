@@ -2,47 +2,64 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap');
 
 :root {
-  /* Slate & Neutral Formal Enterprise Palette */
-  --bg-app: #0F172A;
-  --bg-sidebar: #0B1120;
-  --bg-surface: #1E293B;
-  --bg-card: #1E293B;
-  --bg-card-hover: #243247;
-  --bg-input: #0B1120;
-  
-  --border-subtle: #334155;
-  --border-strong: #475569;
-  --border-focus: #2563EB;
-  
-  /* Primary & Accent Colors (Corporate Royal Blue) */
-  --primary: #2563EB;
+  /* ================= ZERO MEDIA — BROADCAST STUDIO & SIGNAGE PALETTE ================= */
+  /* Obsidian Studio Canvas (True neutral darks for cinema-grade media contrast) */
+  --bg-app: #0A0C10;           /* Fondo general ultra-oscuro estilo sala de control */
+  --bg-sidebar: #07080B;       /* Barra lateral negro estudio profundo */
+  --bg-topbar: #0A0C10;        /* Cabecera de control */
+  --bg-card: #12151D;          /* Superficie de tarjeta / rack multimedia */
+  --bg-card-hover: #171B26;    /* Hover de tarjeta */
+  --bg-surface: #161A24;       /* Superficie elevada / fondos de inputs / contenedores */
+  --bg-input: #0E1117;         /* Fondo de campos de formulario */
+
+  /* Hairline Precision Borders (Bordes milimétricos de hardware broadcast) */
+  --border-subtle: #1F2536;    /* Borde normal suave */
+  --border-strong: #2D374D;    /* Borde destacado / divisores */
+  --border-focus: #3B82F6;     /* Borde activo */
+  --border-specular: rgba(255, 255, 255, 0.06); /* Reflejo sutil superior */
+
+  /* Broadcast Functional Accents */
+  --primary: #2563EB;          /* Azul de interfaz de control broadcast */
   --primary-hover: #1D4ED8;
-  --primary-subtle: rgba(37, 99, 235, 0.12);
-  
-  --status-online: #10B981;
+  --primary-light: #60A5FA;
+  --primary-subtle: rgba(37, 99, 235, 0.14);
+
+  --status-online: #10B981;     /* Pantalla En Línea / Señal OK / Aprobado */
   --status-online-bg: rgba(16, 185, 129, 0.12);
-  --status-warning: #F59E0B;
-  --status-danger: #EF4444;
+  --status-warning: #F59E0B;   /* Tarifas comerciales / Moderación / Cupos */
+  --status-warning-bg: rgba(245, 158, 11, 0.12);
+  --status-danger: #EF4444;    /* ON AIR / Standby / Alerta / Offline */
   --status-danger-bg: rgba(239, 68, 68, 0.12);
-  
-  --text-main: #F8FAFC;
-  --text-secondary: #CBD5E1;
-  --text-muted: #94A3B8;
-  --text-dim: #64748B;
-  
-  --font-heading: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  --live-emerald: #10B981;
+  --on-air-red: #EF4444;
+  --commercial-amber: #F59E0B;
+  --broadcast-purple: #8B5CF6;
+
+  /* Studio Typography Colors */
+  --text-main: #FFFFFF;        /* Títulos y datos primarios en blanco absoluto */
+  --text-primary: #FFFFFF;     /* Alias primario */
+  --text-secondary: #CBD5E1;   /* Textos de cuerpo y etiquetas secundarias */
+  --text-muted: #8E9BAE;       /* Metadatos, especificaciones técnicas y descripciones */
+  --text-dim: #556277;         /* Textos atenuados, marcas de agua, placeholders */
+
+  /* Tipografías */
+  --font-heading: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', Consolas, monospace;
-  
+
+  /* Dimensiones y radios refinados */
   --sidebar-width: 250px;
+  --radius-xs: 3px;
   --radius-sm: 4px;
   --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 10px;
-  
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.25), 0 2px 4px -2px rgba(0, 0, 0, 0.2);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.35), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+
+  /* Sombras técnicas calibradas para pantallas oscuras */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.55), 0 4px 10px rgba(0, 0, 0, 0.4);
 }
 
 * {
@@ -70,11 +87,11 @@ body {
   background: var(--bg-app);
 }
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #1F2536;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #2D374D;
 }
 
 /* ================= SIDEBAR ================= */
@@ -92,11 +109,12 @@ body {
 }
 
 .sidebar-header {
-  padding: 20px 18px;
+  padding: 18px 16px;
   display: flex;
   align-items: center;
   gap: 12px;
   border-bottom: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.015);
 }
 
 .brand-logo {
@@ -108,24 +126,24 @@ body {
 .brand-text h1 {
   font-family: var(--font-heading);
   font-size: 1.15rem;
-  font-weight: 700;
+  font-weight: 800;
   color: #FFF;
   letter-spacing: -0.01em;
 }
 
 .brand-text span {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   color: var(--text-muted);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .sidebar-nav {
-  padding: 20px 12px;
+  padding: 16px 10px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   flex: 1;
 }
 
@@ -136,52 +154,55 @@ body {
   padding: 10px 14px;
   color: var(--text-secondary);
   text-decoration: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   font-weight: 500;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   transition: all 0.15s ease;
   cursor: pointer;
   border: 1px solid transparent;
+  border-left: 3px solid transparent;
 }
 
 .nav-item:hover {
   color: #FFF;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .nav-item.active {
   color: #FFF;
-  background: var(--primary-subtle);
-  border-color: rgba(37, 99, 235, 0.4);
+  background: rgba(37, 99, 235, 0.12);
+  border-left-color: var(--primary);
   font-weight: 600;
 }
 
 .nav-item .icon {
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   display: flex;
   align-items: center;
 }
 
 .badge-counter {
   margin-left: auto;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--bg-surface);
   color: var(--text-secondary);
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
   font-family: var(--font-mono);
+  border: 1px solid var(--border-subtle);
 }
 
 .nav-item.active .badge-counter {
   background: var(--primary);
   color: #FFF;
+  border-color: var(--primary);
 }
 
 .sidebar-footer {
-  padding: 16px;
+  padding: 14px 16px;
   border-top: 1px solid var(--border-subtle);
-  background: rgba(0, 0, 0, 0.15);
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .user-profile {
@@ -193,11 +214,15 @@ body {
 .user-avatar {
   width: 34px;
   height: 34px;
-  border-radius: 8px;
-  background: #3B82F6;
+  border-radius: var(--radius-sm);
+  background: var(--primary);
   display: flex;
   align-items: center;
   justify-content: center;
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: #FFF;
+}
   font-weight: 700;
   color: #FFF;
   font-size: 0.85rem;
@@ -250,7 +275,7 @@ body {
   height: 60px;
   padding: 0 24px;
   border-bottom: 1px solid var(--border-subtle);
-  background: var(--bg-sidebar);
+  background: var(--bg-topbar);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -268,8 +293,12 @@ body {
 .topbar-title {
   font-family: var(--font-heading);
   font-size: 1.15rem;
-  font-weight: 600;
+  font-weight: 700;
   color: #FFF;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .topbar-right {
@@ -282,12 +311,13 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--status-online-bg);
+  background: rgba(16, 185, 129, 0.08);
   border: 1px solid rgba(16, 185, 129, 0.25);
-  padding: 5px 10px;
+  padding: 5px 12px;
   border-radius: var(--radius-sm);
-  font-size: 0.78rem;
-  font-weight: 500;
+  font-size: 0.74rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
   color: var(--status-online);
 }
 
@@ -296,6 +326,7 @@ body {
   height: 7px;
   border-radius: 50%;
   background: var(--status-online);
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
 }
 
 /* ================= BUTTONS ================= */
@@ -305,8 +336,8 @@ body {
   justify-content: center;
   gap: 8px;
   padding: 8px 16px;
-  border-radius: var(--radius-md);
-  font-size: 0.88rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.86rem;
   font-weight: 600;
   font-family: var(--font-body);
   cursor: pointer;
@@ -319,10 +350,12 @@ body {
   background: var(--primary);
   color: #FFF;
   border-color: #1D4ED8;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .btn-primary:hover {
   background: var(--primary-hover);
+  border-color: var(--primary-hover);
 }
 
 .btn-secondary {
@@ -332,7 +365,7 @@ body {
 }
 
 .btn-secondary:hover {
-  background: #222E42;
+  background: var(--bg-card-hover);
   color: #FFF;
   border-color: var(--border-strong);
 }
@@ -379,29 +412,44 @@ body {
 .stat-card {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
+  border-top: 2px solid var(--primary);
   border-radius: var(--radius-lg);
-  padding: 16px 20px;
+  padding: 18px 20px;
   box-shadow: var(--shadow-sm);
+  position: relative;
+}
+
+.stats-grid .stat-card:nth-child(2) {
+  border-top-color: var(--live-emerald);
+}
+
+.stats-grid .stat-card:nth-child(3) {
+  border-top-color: #6366F1;
+}
+
+.stats-grid .stat-card:nth-child(4) {
+  border-top-color: var(--commercial-amber);
 }
 
 .stat-title {
-  font-size: 0.8rem;
+  font-size: 0.74rem;
   color: var(--text-muted);
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.06em;
   margin-bottom: 6px;
 }
 
 .stat-value {
-  font-family: var(--font-heading);
-  font-size: 1.7rem;
+  font-family: var(--font-mono);
+  font-size: 1.85rem;
   font-weight: 700;
   color: #FFF;
+  letter-spacing: -0.02em;
 }
 
 .stat-subtext {
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   color: var(--text-dim);
   margin-top: 4px;
 }
@@ -551,16 +599,18 @@ body {
 .device-card {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
+  border-top: 1px solid var(--border-specular);
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .device-card:hover {
   border-color: var(--border-strong);
+  box-shadow: var(--shadow-md);
 }
 
 /* Header inside device card */
@@ -575,7 +625,7 @@ body {
 .device-name {
   font-family: var(--font-heading);
   font-size: 1.05rem;
-  font-weight: 600;
+  font-weight: 700;
   color: #FFF;
   line-height: 1.3;
 }
@@ -588,37 +638,39 @@ body {
 
 .device-status-badge {
   font-size: 0.72rem;
-  font-weight: 500;
-  padding: 2px 7px;
+  font-weight: 600;
+  padding: 3px 8px;
   border-radius: var(--radius-sm);
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   white-space: nowrap;
+  font-family: var(--font-mono);
 }
 
 .device-status-badge.online {
   background: var(--status-online-bg);
   color: var(--status-online);
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 .device-status-badge.offline {
   background: var(--status-danger-bg);
   color: var(--status-danger);
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
-/* Screen preview inside card */
+/* Screen preview inside card: TV Monitor Frame */
 .device-screen-preview {
   position: relative;
-  width: calc(100% - 36px);
-  margin: 0 18px;
+  width: calc(100% - 32px);
+  margin: 0 16px;
   aspect-ratio: 16 / 9;
   background: #000;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   overflow: hidden;
-  border: 1px solid var(--border-subtle);
+  border: 2px solid #1C2333;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05), 0 4px 14px rgba(0, 0, 0, 0.5);
 }
 
 .device-screen-preview img, .device-screen-preview video {
@@ -639,28 +691,30 @@ body {
 }
 
 .preview-format-tag {
-  background: rgba(15, 23, 42, 0.85);
+  background: rgba(10, 12, 16, 0.9);
   color: #FFF;
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 700;
   padding: 2px 7px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   border: 1px solid rgba(255, 255, 255, 0.15);
+  font-family: var(--font-mono);
 }
 
 .preview-res-tag {
-  background: rgba(15, 23, 42, 0.85);
+  background: rgba(10, 12, 16, 0.9);
   color: var(--text-muted);
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 600;
   font-family: var(--font-mono);
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Currently emitting banner */
 .device-current-ad {
-  margin: 12px 18px 0;
+  margin: 12px 16px 0;
   padding: 8px 12px;
   background: var(--bg-surface);
   border-radius: var(--radius-sm);
@@ -673,9 +727,11 @@ body {
 
 .current-ad-label {
   color: var(--text-dim);
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: 0.72rem;
+  font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-family: var(--font-mono);
 }
 
 .current-ad-title {
@@ -692,9 +748,12 @@ body {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
-  margin: 12px 18px;
-  background: rgba(0, 0, 0, 0.2);
+  margin: 12px 16px;
+  background: rgba(0, 0, 0, 0.35);
   padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-subtle);
 }
@@ -815,26 +874,26 @@ body {
   gap: 6px;
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
-  padding: 6px 14px;
-  border-radius: 20px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
   color: var(--text-secondary);
   font-size: 0.82rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .tv-chip:hover {
-  background: #253347;
+  background: var(--bg-card-hover);
   color: #FFF;
   border-color: var(--border-strong);
 }
 
 .tv-chip.active {
   background: var(--primary);
-  border-color: #1D4ED8;
+  border-color: var(--primary);
   color: #FFF;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 /* Banner Informativo del TV Seleccionado */
@@ -845,6 +904,7 @@ body {
   gap: 20px;
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--live-emerald);
   border-radius: var(--radius-md);
   padding: 14px 18px;
   flex-wrap: wrap;
@@ -858,6 +918,9 @@ body {
   font-weight: 700;
   color: var(--status-online);
   margin-bottom: 2px;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 #tv-banner-name {
@@ -874,6 +937,7 @@ body {
   color: var(--text-muted);
   flex-wrap: wrap;
   margin-top: 2px;
+  font-family: var(--font-mono);
 }
 
 .tv-banner-right {
@@ -884,31 +948,32 @@ body {
 
 .tv-banner-stats {
   display: flex;
-  gap: 12px;
+  gap: 10px;
 }
 
 .stat-mini {
   display: flex;
   flex-direction: column;
-  background: rgba(0, 0, 0, 0.25);
-  padding: 5px 12px;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 6px 12px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-subtle);
   text-align: center;
 }
 
 .stat-mini-val {
-  font-family: var(--font-heading);
-  font-size: 1.05rem;
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
   font-weight: 700;
   color: #FFF;
 }
 
 .stat-mini-lbl {
   font-size: 0.65rem;
-  color: var(--text-dim);
+  color: var(--text-muted);
   text-transform: uppercase;
   font-weight: 600;
+  letter-spacing: 0.04em;
 }
 
 /* ================= GRID DE TRABAJO (2 COLUMNAS EQUILIBRADAS) ================= */
@@ -966,8 +1031,9 @@ body {
   width: 100%;
   aspect-ratio: 16 / 9;
   background: #000;
-  border-radius: 8px;
-  border: 2px solid #2B384E;
+  border-radius: var(--radius-sm);
+  border: 3px solid #1C2333;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06), 0 8px 24px rgba(0, 0, 0, 0.6);
   position: relative;
   overflow: hidden;
 }
@@ -998,7 +1064,7 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  background: rgba(15, 23, 42, 0.92);
+  background: rgba(10, 12, 16, 0.94);
   color: #FFF;
   padding: 6px 12px;
   font-size: 0.78rem;
@@ -1006,17 +1072,19 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   z-index: 10;
 }
 
 .ticker-icon {
-  background: var(--primary);
+  background: var(--on-air-red);
   color: #FFF;
-  padding: 1px 6px;
+  padding: 2px 7px;
   border-radius: 3px;
   font-size: 0.65rem;
-  font-weight: 700;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  font-family: var(--font-mono);
 }
 
 .ticker-text {
