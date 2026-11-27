@@ -1,5 +1,6 @@
 /**
  * 0Media Digital Signage — Landing Page Interactive Scripts
+ * Dynamic DOOH Screen Switcher, Active Navigation & Lightbox
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -12,7 +13,6 @@ document.addEventListener('DOMContentLoaded', () => {
       landingNav.classList.toggle('open');
     });
 
-    // Close menu when clicking any nav link
     landingNav.querySelectorAll('a').forEach(link => {
       link.addEventListener('click', () => {
         landingNav.classList.remove('open');
@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const sections = document.querySelectorAll('section[id]');
 
   function updateActiveNav() {
-    const scrollPos = window.scrollY + 120;
+    const scrollPos = window.scrollY + 100;
 
     sections.forEach(section => {
       const top = section.offsetTop;
@@ -46,7 +46,62 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('scroll', updateActiveNav, { passive: true });
   updateActiveNav();
 
-  // 3. Close Lightbox on Escape Key
+  // 3. Interactive Hero DOOH TV Switcher
+  const pillBtns = document.querySelectorAll('.tv-switch-pills .pill-btn');
+  const heroImg = document.getElementById('hero-tv-img');
+  const heroTag = document.getElementById('hero-tv-tag');
+  const heroViews = document.getElementById('hero-tv-views');
+  const heroLoc = document.getElementById('hero-tv-loc');
+  const heroFreq = document.getElementById('hero-tv-freq');
+
+  let autoCycleInterval = null;
+  let currentPillIdx = 0;
+
+  function setHeroScreen(pill) {
+    if (!pill || !heroImg) return;
+
+    pillBtns.forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+
+    // Quick smooth crossfade
+    heroImg.style.opacity = '0.3';
+    heroImg.style.transform = 'scale(0.98)';
+
+    setTimeout(() => {
+      heroImg.src = pill.getAttribute('data-img');
+      if (heroTag) heroTag.textContent = pill.getAttribute('data-tag');
+      if (heroViews) heroViews.textContent = pill.getAttribute('data-views');
+      if (heroLoc) heroLoc.textContent = pill.getAttribute('data-loc');
+      if (heroFreq) heroFreq.textContent = pill.getAttribute('data-freq');
+
+      heroImg.style.opacity = '1';
+      heroImg.style.transform = 'scale(1)';
+    }, 150);
+  }
+
+  pillBtns.forEach((pill, idx) => {
+    pill.addEventListener('click', () => {
+      currentPillIdx = idx;
+      setHeroScreen(pill);
+      // Restart interval on manual click
+      startAutoCycle();
+    });
+  });
+
+  function startAutoCycle() {
+    if (autoCycleInterval) clearInterval(autoCycleInterval);
+    autoCycleInterval = setInterval(() => {
+      if (pillBtns.length === 0) return;
+      currentPillIdx = (currentPillIdx + 1) % pillBtns.length;
+      setHeroScreen(pillBtns[currentPillIdx]);
+    }, 6000);
+  }
+
+  if (pillBtns.length > 0) {
+    startAutoCycle();
+  }
+
+  // 4. Close Lightbox on Escape Key
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       closeImageLightbox();
@@ -66,7 +121,7 @@ function openImageLightbox(src, caption) {
 
   if (modal && img) {
     img.src = src;
-    if (captionEl) captionEl.textContent = caption || 'Vista previa de televisor en circuito comercial';
+    if (captionEl) captionEl.textContent = caption || 'Vista previa de pantalla en circuito comercial';
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
   }

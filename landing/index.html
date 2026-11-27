@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>0Media — Publicita en Pantallas Digitales de la Ciudad</title>
+  <title>0Media — Red Inteligente de Publicidad Digital DOOH en Pantallas Comerciales</title>
   <meta name="description"
     content="Publicita en distintos lugares de la ciudad, todo desde una sola aplicación. Red de pantallas comerciales inteligentes DOOH.">
   <link rel="icon" type="image/png" href="/landing/assets/logo.png">
@@ -28,7 +28,7 @@
     <div class="signage-grid-lines"></div>
   </div>
 
-  <!-- ================= HEADER / NAVEGACIÓN SUPERIOR ================= -->
+  <!-- ================= HEADER COMPACTO Y ELEGANTE ================= -->
   <header class="landing-header">
     <div class="header-container">
       <a href="/" class="brand-link">
@@ -39,75 +39,134 @@
         </div>
       </a>
 
-      <!-- Navegación de Escritorio -->
+      <!-- Navegación Esencial y Compacta (Solo 3 enlaces limpios) -->
       <nav class="landing-nav" id="landing-nav">
-        <a href="#quienes-somos" class="nav-link">¿Quiénes Somos?</a>
-        <a href="#que-hacemos" class="nav-link">¿Qué Hacemos?</a>
-        <a href="#publicita" class="nav-link">Publicita con Nosotros</a>
+        <a href="#que-hacemos" class="nav-link">¿Cómo Funciona?</a>
         <a href="#pantallas-ciudad" class="nav-link">Pantallas</a>
-        <a href="#iniciativa-1998" class="nav-link">Iniciativa 1998</a>
         <a href="#contacto" class="nav-link">Contacto</a>
       </nav>
 
-      <!-- Botones de Acción en el Header -->
+      <!-- Botones de Acción Rápidos -->
       <div class="header-actions">
-        <a href="/app" class="btn btn-primary btn-launch-app" title="Entrar a la Plataforma">
+        <a href="/app" class="btn btn-secondary btn-sm" title="Acceso Administrador">
+          <span>👑 Admin</span>
+        </a>
+        <a href="/app" class="btn btn-primary btn-sm btn-launch-app" title="Entrar a la Plataforma">
           <span>Ingresar al Sistema</span>
           <span class="btn-arrow">➔</span>
         </a>
-        <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Abrir menú de navegación">
+        <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Abrir menú">
           <span></span><span></span><span></span>
         </button>
       </div>
     </div>
   </header>
 
-  <!-- ================= HERO SECTION ================= -->
+  <!-- ================= HERO SECTION CON TERMINAL DOOH EN VIVO ================= -->
   <section class="hero-section">
     <div class="hero-aura-glow" aria-hidden="true"></div>
     <div class="hero-container">
 
-      <div class="hero-badge">
-        <span class="hero-badge-dot"></span>
-        <span>Red Inteligente de Publicidad DOOH</span>
+      <!-- Columna Izquierda: Mensaje y Propuesta de Valor -->
+      <div class="hero-content">
+        <div class="hero-badge">
+          <span class="pulse-dot-red"></span>
+          <span>Red Inteligente de Publicidad DOOH</span>
+        </div>
+
+        <h1 class="hero-title">
+          Publicita en toda la ciudad.<br>
+          <span class="gradient-text">Desde una sola aplicación.</span>
+        </h1>
+
+        <p class="hero-description">
+          Llega a miles de clientes reales en centros comerciales, restaurantes y oficinas.
+          <strong>Elige tu televisor, sube tu anuncio y sal al aire en minutos.</strong>
+        </p>
+
+        <div class="hero-cta-group">
+          <a href="/app" class="btn btn-hero-primary">
+            <span>🚀 Comenzar Campaña</span>
+          </a>
+          <a href="#pantallas-ciudad" class="btn btn-hero-secondary">
+            <span>📺 Ver Pantallas en Vivo</span>
+          </a>
+        </div>
+
+        <!-- Badges de Confianza Rápidos -->
+        <div class="hero-trust-bar">
+          <div class="trust-item">
+            <span class="trust-icon">✓</span>
+            <span>100% Web (Sin apps)</span>
+          </div>
+          <div class="trust-item">
+            <span class="trust-icon">✓</span>
+            <span>Resolución 4K UHD</span>
+          </div>
+          <div class="trust-item">
+            <span class="trust-icon">✓</span>
+            <span>Pases en Tiempo Real</span>
+          </div>
+          <div class="trust-item">
+            <span class="trust-icon">✓</span>
+            <span>Desde 1998</span>
+          </div>
+        </div>
       </div>
 
-      <h1 class="hero-title">
-        Publicita en distintos lugares de la ciudad.<br>
-        <span class="gradient-text">Todo desde una sola aplicación.</span>
-      </h1>
+      <!-- Columna Derecha: Showcase Interactivo del Televisor en la Ciudad -->
+      <div class="hero-tv-showcase">
+        <div class="tv-ambient-glow" aria-hidden="true"></div>
+        <div class="hero-tv-terminal">
+          <!-- Barra de Estado de la Pantalla en Vivo -->
+          <div class="tv-terminal-topbar">
+            <div class="tv-channel-tag">
+              <span class="pulse-dot"></span> <span id="hero-tv-tag">EN VIVO • MALL PLAZA CENTRAL</span>
+            </div>
+            <div class="tv-res-badge">4K HDR • 60 FPS</div>
+          </div>
 
-      <p class="hero-description">
-        Muestra tu marca en televisores de centros comerciales, zonas financieras y restaurantes.
-        <strong>Sube tu anuncio web y sal al aire en minutos.</strong>
-      </p>
+          <!-- Marco de TV Realista con Pantalla Activa -->
+          <div class="hero-tv-bezel">
+            <img id="hero-tv-img" src="/landing/assets/promo_retail.jpg" alt="Transmisión en televisor comercial"
+              class="hero-screen-image" onclick="openImageLightbox(this.src, document.getElementById('hero-tv-tag').textContent)">
+            <div class="screen-glare-effect"></div>
+          </div>
 
-      <div class="hero-cta-group">
-        <a href="/app" class="btn btn-hero-primary">
-          <span>🚀 Publicitar Ahora</span>
-        </a>
-        <a href="#pantallas-ciudad" class="btn btn-hero-secondary">
-          <span>📺 Ver Pantallas en Vivo</span>
-        </a>
-      </div>
+          <!-- Ficha de Datos en Vivo del Televisor -->
+          <div class="hero-tv-footer">
+            <div class="tv-stat">
+              <span class="tv-stat-label">Audiencia Diaria</span>
+              <strong class="tv-stat-val" id="hero-tv-views">+45,000 personas</strong>
+            </div>
+            <div class="tv-stat">
+              <span class="tv-stat-label">Ubicación</span>
+              <strong class="tv-stat-val" id="hero-tv-loc">Pasillo Central Retail</strong>
+            </div>
+            <div class="tv-stat">
+              <span class="tv-stat-label">Frecuencia</span>
+              <strong class="tv-stat-val" id="hero-tv-freq">Pases cada 2 min</strong>
+            </div>
+          </div>
+        </div>
 
-      <!-- Métricas Clave y Rápidas -->
-      <div class="hero-metrics-grid">
-        <div class="metric-card">
-          <div class="metric-value">100% Web</div>
-          <div class="metric-label">Sin apps que instalar</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-value">4K UHD</div>
-          <div class="metric-label">Fotos, videos y GIFs</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-value">Al Instante</div>
-          <div class="metric-label">Emisión en tiempo real</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-value">Desde 1998</div>
-          <div class="metric-label">+25 años de respaldo</div>
+        <!-- Botones Selectores de Pantalla Interactiva -->
+        <div class="tv-switch-pills">
+          <button class="pill-btn active" data-img="/landing/assets/promo_retail.jpg"
+            data-tag="EN VIVO • MALL PLAZA CENTRAL" data-views="+45,000 personas" data-loc="Pasillo Central Retail"
+            data-freq="Pases cada 2 min">
+            🛍️ Centro Comercial
+          </button>
+          <button class="pill-btn" data-img="/landing/assets/promo_food.jpg"
+            data-tag="EN VIVO • FOOD HALL GOURMET" data-views="+28,000 personas" data-loc="Plazoleta de Comidas"
+            data-freq="Pases cada 90 seg">
+            🍔 Zona Gourmet
+          </button>
+          <button class="pill-btn" data-img="/landing/assets/promo_tech.jpg"
+            data-tag="EN VIVO • TORRE FINANCIERA" data-views="+22,000 ejecutivos" data-loc="Lobby de Ascensores"
+            data-freq="Pases continuos">
+            💼 Hub Corporativo
+          </button>
         </div>
       </div>
 
@@ -124,7 +183,7 @@
         </div>
         <h2 class="section-title">¿Quiénes Somos?</h2>
         <p class="section-subtitle">
-          La red que conecta tu negocio con miles de personas en los puntos más concurridos de la ciudad.
+          La red que conecta tu marca con miles de personas en los puntos más transitados de la ciudad.
         </p>
       </div>
 
@@ -133,37 +192,42 @@
           <div class="about-icon">🏢</div>
           <h3>Tu marca donde la gente mira</h3>
           <p>
-            En <strong>Zero Media</strong> convertimos televisores comerciales en <strong>pantallas publicitarias de alto
-              impacto</strong>.
+            En <strong>Zero Media</strong> convertimos televisores comerciales en <strong>vitrinas publicitarias de alta
+              visibilidad</strong>.
           </p>
           <p>
-            Eliminamos intermediarios: tú decides <strong>dónde anunciarte, cuánto invertir y qué días emitir</strong>,
-            todo desde tu celular o computadora.
+            Eliminamos intermediarios: tú decides <strong>dónde pautar, cuánto invertir y qué días emitir</strong>,
+            todo desde tu navegador con control absoluto.
           </p>
+          <div class="about-card-cta">
+            <a href="/app" class="btn btn-secondary btn-sm">
+              <span>Conocer la Plataforma ➔</span>
+            </a>
+          </div>
         </div>
 
         <div class="about-pillars">
           <div class="pillar-item">
             <div class="pillar-icon">⚡</div>
             <div>
-              <h4>Control en Vivo</h4>
-              <p>Cambia o actualiza tus anuncios al instante sin esperar días.</p>
+              <h4>Control en Tiempo Real</h4>
+              <p>Cambia o actualiza tus anuncios al instante sin esperar trámites ni días hábiles.</p>
             </div>
           </div>
 
           <div class="pillar-item">
             <div class="pillar-icon">🎯</div>
             <div>
-              <h4>Ubicación Precisa</h4>
-              <p>Elige pantallas en zonas comerciales, de oficinas o gastronómicas.</p>
+              <h4>Ubicaciones Estratégicas</h4>
+              <p>Elige pantallas en pasillos de malls, plazoletas de comidas o torres de oficinas.</p>
             </div>
           </div>
 
           <div class="pillar-item">
             <div class="pillar-icon">🛡️</div>
             <div>
-              <h4>Transparencia Total</h4>
-              <p>Sabes con exactitud cuántas veces se reprodujo tu publicidad.</p>
+              <h4>Métricas Certificadas</h4>
+              <p>Auditoría Proof-of-Play: sabes con exactitud cuántas veces se emitió tu campaña.</p>
             </div>
           </div>
         </div>
@@ -178,68 +242,68 @@
 
       <div class="section-header">
         <div class="section-badge badge-emerald">
-          <span>Cómo Funciona</span>
+          <span>Proceso Simple en 4 Pasos</span>
         </div>
-        <h2 class="section-title">¿Qué Hacemos?</h2>
+        <h2 class="section-title">¿Cómo Funciona?</h2>
         <p class="section-subtitle">
-          Un sistema simple y automático para poner tu publicidad al aire sin complicaciones técnicas.
+          Un sistema automático y ágil para proyectar tus anuncios sin instalaciones complejas.
         </p>
       </div>
 
       <div class="features-grid">
-        <!-- Tarjeta 1 -->
+        <!-- Paso 1 -->
         <div class="feature-card">
           <div class="feature-number">01</div>
           <div class="feature-icon">📺</div>
           <h3 class="feature-title">Conectamos Pantallas</h3>
           <p class="feature-desc">
-            Instalamos televisores Smart TV en locales de alto flujo. Transmiten de forma continua y segura.
+            Instalamos Smart TVs y Android TVs en locales de alto flujo. Transmiten de forma continua y autónoma en 4K.
           </p>
           <ul class="feature-tags">
-            <li><span>✓</span> Calidad 4K UHD</li>
-            <li><span>✓</span> Conexión 24/7</li>
+            <li><span>✓</span> Conexión 24/7 en vivo</li>
+            <li><span>✓</span> Calidad Full HD / 4K</li>
           </ul>
         </div>
 
-        <!-- Tarjeta 2 -->
+        <!-- Paso 2 -->
         <div class="feature-card">
           <div class="feature-number">02</div>
           <div class="feature-icon">🌐</div>
           <h3 class="feature-title">Cargas tu Anuncio</h3>
           <p class="feature-desc">
-            Entras a la web, seleccionas la pantalla en la ciudad y subes tu imagen, video o GIF en segundos.
+            Ingresas al portal 100% web, eliges la pantalla en la ciudad y subes tu imagen, video o GIF en segundos.
           </p>
           <ul class="feature-tags">
-            <li><span>✓</span> 100% desde tu navegador</li>
             <li><span>✓</span> Sin descargas ni APKs</li>
+            <li><span>✓</span> Pago por pantalla</li>
           </ul>
         </div>
 
-        <!-- Tarjeta 3 -->
+        <!-- Paso 3 -->
         <div class="feature-card">
           <div class="feature-number">03</div>
           <div class="feature-icon">⚡</div>
           <h3 class="feature-title">Aprobación Ágil</h3>
           <p class="feature-desc">
-            Revisamos la resolución y contenido en minutos para asegurar que tu marca luzca impecable.
+            Validamos el formato técnico y la resolución en pocos minutos para que tu marca luzca profesional.
           </p>
           <ul class="feature-tags">
-            <li><span>✓</span> Validación en minutos</li>
-            <li><span>✓</span> Imagen profesional</li>
+            <li><span>✓</span> Filtro en minutos</li>
+            <li><span>✓</span> Calidad garantizada</li>
           </ul>
         </div>
 
-        <!-- Tarjeta 4 -->
+        <!-- Paso 4 -->
         <div class="feature-card">
           <div class="feature-number">04</div>
           <div class="feature-icon">📊</div>
           <h3 class="feature-title">Métricas en Vivo</h3>
           <p class="feature-desc">
-            Monitorea en tiempo real cuántas veces y a qué horas se transmitió tu anuncio en cada televisor.
+            Visualiza en tiempo real cuántas veces y a qué horas se transmitió tu anuncio en cada televisor.
           </p>
           <ul class="feature-tags">
-            <li><span>✓</span> Emisiones certificadas</li>
-            <li><span>✓</span> Control de inversión</li>
+            <li><span>✓</span> Conteo Proof-of-Play</li>
+            <li><span>✓</span> Retorno transparente</li>
           </ul>
         </div>
       </div>
@@ -251,34 +315,34 @@
   <section class="content-section" id="publicita">
     <div class="section-container">
 
-      <!-- Banner de Gran Impacto con los Slogans Requeridos -->
+      <!-- Banner Central con los Slogans Requeridos -->
       <div class="advertiser-hero-banner">
         <div class="banner-glow" aria-hidden="true"></div>
-        <span class="banner-badge">Publicidad Inteligente DOOH</span>
+        <span class="banner-badge">Cartelería Digital Comercial</span>
         <h2 class="banner-heading">"Publicita en distintos lugares de la ciudad"</h2>
         <p class="banner-subheading">"Todo desde una sola aplicación"</p>
         <p class="banner-text">
-          Llega directo a tus clientes mientras compran, comen o pasean. Elige tu televisor y activa tu campaña hoy.
+          Pon tu negocio a la vista de miles de compradores activos. Elige tu circuito de pantallas y comienza hoy.
         </p>
         <div class="banner-actions">
           <a href="/app" class="btn btn-primary btn-lg">
-            <span>✨ Empezar a Publicitar</span>
+            <span>✨ Publicitar Ahora</span>
           </a>
           <a href="#pantallas-ciudad" class="btn btn-secondary btn-lg">
-            <span>Ver Pantallas</span>
+            <span>Explorar Ubicaciones</span>
           </a>
         </div>
       </div>
 
-      <!-- Subsección: Galería de Pantallas en la Ciudad -->
+      <!-- Galería de Pantallas en la Ciudad -->
       <div class="city-screens-section" id="pantallas-ciudad">
-        <div class="section-header" style="margin-top: 50px;">
+        <div class="section-header" style="margin-top: 55px;">
           <div class="section-badge">
             <span>Circuitos en la Ciudad</span>
           </div>
-          <h3 class="section-title">Pantallas Reales en Puntos Estratégicos</h3>
+          <h3 class="section-title">Nuestras Pantallas Comerciales</h3>
           <p class="section-subtitle">
-            Haz clic en cualquier pantalla para ver cómo se proyectan los anuncios al público.
+            Haz clic en cualquier televisor para ampliar la toma y comprobar el impacto visual en vivo.
           </p>
         </div>
 
@@ -309,7 +373,12 @@
               </p>
               <div class="screen-meta">
                 <span>📐 75" 4K UHD</span>
-                <span>⏱️ Rotación continua</span>
+                <span>⏱️ Pases cada 2 min</span>
+              </div>
+              <div class="screen-card-action">
+                <a href="/app" class="btn btn-primary btn-block">
+                  <span>Publicitar en esta Pantalla</span> ➔
+                </a>
               </div>
             </div>
           </div>
@@ -338,7 +407,12 @@
               </p>
               <div class="screen-meta">
                 <span>📐 65" Full HD</span>
-                <span>⏱️ Rotación continua</span>
+                <span>⏱️ Pases cada 90 seg</span>
+              </div>
+              <div class="screen-card-action">
+                <a href="/app" class="btn btn-primary btn-block">
+                  <span>Publicitar en esta Pantalla</span> ➔
+                </a>
               </div>
             </div>
           </div>
@@ -367,38 +441,16 @@
               </p>
               <div class="screen-meta">
                 <span>📐 65" 4K Slim</span>
-                <span>⏱️ Rotación continua</span>
+                <span>⏱️ Pases continuos</span>
+              </div>
+              <div class="screen-card-action">
+                <a href="/app" class="btn btn-primary btn-block">
+                  <span>Publicitar en esta Pantalla</span> ➔
+                </a>
               </div>
             </div>
           </div>
 
-        </div>
-      </div>
-
-      <!-- Pasos Rápidos para Publicitar -->
-      <div class="how-to-steps-box">
-        <h3 class="steps-title">¿Cómo publicar tu anuncio en 4 pasos?</h3>
-        <div class="steps-grid">
-          <div class="step-card">
-            <div class="step-num">1</div>
-            <h4>Elige pantalla</h4>
-            <p>Selecciona la ubicación en la ciudad.</p>
-          </div>
-          <div class="step-card">
-            <div class="step-num">2</div>
-            <h4>Sube tu pieza</h4>
-            <p>Carga tu imagen, video o GIF.</p>
-          </div>
-          <div class="step-card">
-            <div class="step-num">3</div>
-            <h4>Aprobación</h4>
-            <p>Validamos el formato en minutos.</p>
-          </div>
-          <div class="step-card">
-            <div class="step-num">4</div>
-            <h4>¡Al aire!</h4>
-            <p>Tu anuncio se proyecta de inmediato.</p>
-          </div>
         </div>
       </div>
 
@@ -456,7 +508,7 @@
           <!-- Tarjeta 2: Correo Electrónico -->
           <div class="contact-card">
             <div class="contact-icon icon-blue">✉️</div>
-            <h4>Correo Electrónico</h4>
+            <h4>Correo Oficial</h4>
             <p>Respuestas comerciales y soporte técnico ágil.</p>
             <a href="mailto:comercial@zeromedia.com" class="contact-link">
               comercial@zeromedia.com ➔
@@ -520,9 +572,8 @@
         <p>© 1998 - 2026 Zero Media Hub. Todos los derechos reservados.</p>
         <div class="footer-links">
           <a href="/app">Ingresar</a>
-          <a href="#quienes-somos">¿Quiénes Somos?</a>
-          <a href="#que-hacemos">¿Qué Hacemos?</a>
-          <a href="#publicita">Publicitar</a>
+          <a href="#que-hacemos">¿Cómo Funciona?</a>
+          <a href="#pantallas-ciudad">Pantallas</a>
           <a href="#contacto">Contacto</a>
         </div>
       </div>
