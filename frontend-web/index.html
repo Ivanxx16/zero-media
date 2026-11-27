@@ -1278,6 +1278,46 @@
                 autocomplete="new-password">
             </div>
           </div>
+
+          <!-- HORARIO AUTOMÁTICO DE ENCENDIDO Y APAGADO (AHORRO ENERGÉTICO) -->
+          <div class="operating-hours-container" style="margin-top: 14px; padding: 14px; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 10px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+              <label class="form-label" style="margin-bottom: 0; display: flex; align-items: center; gap: 8px; font-weight: 600; color: #93C5FD;">
+                <span>⏰</span> Horario Automático de Operación
+              </label>
+              <label class="toggle-switch-label" style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.8rem; color: #E2E8F0;">
+                <input type="checkbox" id="edit-operating-hours-enabled" style="accent-color: #3B82F6; width: 16px; height: 16px; cursor: pointer;">
+                <span>Activar</span>
+              </label>
+            </div>
+            <div id="operating-hours-fields" style="transition: opacity 0.2s ease;">
+              <div class="form-group-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="form-group" style="margin-bottom: 8px;">
+                  <label class="form-label" for="edit-turn-on-time" style="font-size: 0.78rem;">☀️ Hora de Encendido (Apertura):</label>
+                  <input type="time" id="edit-turn-on-time" class="form-input" value="08:00">
+                </div>
+                <div class="form-group" style="margin-bottom: 8px;">
+                  <label class="form-label" for="edit-turn-off-time" style="font-size: 0.78rem;">🌙 Hora de Reposo (Cierre):</label>
+                  <input type="time" id="edit-turn-off-time" class="form-input" value="22:00">
+                </div>
+              </div>
+              <div style="margin-top: 6px;">
+                <label class="form-label" style="font-size: 0.78rem; margin-bottom: 6px;">📅 Días de Emisión:</label>
+                <div class="days-selector-chips" id="edit-schedule-days" style="display: flex; gap: 4px; flex-wrap: wrap;">
+                  <button type="button" class="day-chip active" data-day="1">Lun</button>
+                  <button type="button" class="day-chip active" data-day="2">Mar</button>
+                  <button type="button" class="day-chip active" data-day="3">Mié</button>
+                  <button type="button" class="day-chip active" data-day="4">Jue</button>
+                  <button type="button" class="day-chip active" data-day="5">Vie</button>
+                  <button type="button" class="day-chip active" data-day="6">Sáb</button>
+                  <button type="button" class="day-chip active" data-day="7">Dom</button>
+                </div>
+              </div>
+              <p style="font-size: 0.72rem; color: #94A3B8; margin-top: 8px; margin-bottom: 0;">
+                💡 <em>Al cerrar, la pantalla se suspende por completo (pantalla en negro absoluto, LEDs y decodificador apagados, consumo &lt;0.5W y cero calentamiento). En la mañana se enciende sola.</em>
+              </p>
+            </div>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" id="btn-cancel-device-settings">Cancelar</button>

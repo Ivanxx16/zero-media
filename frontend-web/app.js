@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.removeItem('0media_devices_v4');
     localStorage.removeItem('0media_devices_v3');
     localStorage.removeItem('0media_devices_v2');
-  } catch (e) {}
+  } catch (e) { }
   const cached = localStorage.getItem('0media_devices_v5');
   if (cached) {
     try {
@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (Array.isArray(parsed) && parsed.length > 0) {
         devices = parsed.filter(d => d.isPaired);
       }
-    } catch (e) {}
+    } catch (e) { }
   }
 
   let currentSelectedTvId = devices[0]?.id || null;
@@ -124,15 +124,15 @@ document.addEventListener('DOMContentLoaded', () => {
   // Paleta de Colores Exclusivos por Anunciante (Identidad Visual DOOH)
   const CLIENT_COLOR_PALETTES = [
     { id: 'emerald', border: '#10B981', bg: 'rgba(16, 185, 129, 0.12)', text: '#34D399', badgeBg: 'rgba(16, 185, 129, 0.22)', glow: 'rgba(16, 185, 129, 0.35)' },
-    { id: 'purple',  border: '#A855F7', bg: 'rgba(168, 85, 247, 0.12)', text: '#C084FC', badgeBg: 'rgba(168, 85, 247, 0.22)', glow: 'rgba(168, 85, 247, 0.35)' },
-    { id: 'amber',   border: '#F59E0B', bg: 'rgba(245, 158, 11, 0.12)', text: '#FBBF24', badgeBg: 'rgba(245, 158, 11, 0.22)', glow: 'rgba(245, 158, 11, 0.35)' },
-    { id: 'rose',    border: '#F43F5E', bg: 'rgba(244, 63, 94, 0.12)',  text: '#FB7185', badgeBg: 'rgba(244, 63, 94, 0.22)',  glow: 'rgba(244, 63, 94, 0.35)' },
-    { id: 'cyan',    border: '#06B6D4', bg: 'rgba(6, 182, 212, 0.12)',  text: '#22D3EE', badgeBg: 'rgba(6, 182, 212, 0.22)',  glow: 'rgba(6, 182, 212, 0.35)' },
-    { id: 'orange',  border: '#F97316', bg: 'rgba(249, 115, 22, 0.12)', text: '#FB923C', badgeBg: 'rgba(249, 115, 22, 0.22)', glow: 'rgba(249, 115, 22, 0.35)' },
-    { id: 'indigo',  border: '#6366F1', bg: 'rgba(99, 102, 241, 0.12)', text: '#818CF8', badgeBg: 'rgba(99, 102, 241, 0.22)', glow: 'rgba(99, 102, 241, 0.35)' },
-    { id: 'teal',    border: '#14B8A6', bg: 'rgba(20, 184, 166, 0.12)', text: '#2DD4BF', badgeBg: 'rgba(20, 184, 166, 0.22)', glow: 'rgba(20, 184, 166, 0.35)' },
-    { id: 'lime',    border: '#84CC16', bg: 'rgba(132, 204, 22, 0.12)', text: '#A3E635', badgeBg: 'rgba(132, 204, 22, 0.22)', glow: 'rgba(132, 204, 22, 0.35)' },
-    { id: 'pink',    border: '#EC4899', bg: 'rgba(236, 72, 153, 0.12)', text: '#F472B6', badgeBg: 'rgba(236, 72, 153, 0.22)', glow: 'rgba(236, 72, 153, 0.35)' },
+    { id: 'purple', border: '#A855F7', bg: 'rgba(168, 85, 247, 0.12)', text: '#C084FC', badgeBg: 'rgba(168, 85, 247, 0.22)', glow: 'rgba(168, 85, 247, 0.35)' },
+    { id: 'amber', border: '#F59E0B', bg: 'rgba(245, 158, 11, 0.12)', text: '#FBBF24', badgeBg: 'rgba(245, 158, 11, 0.22)', glow: 'rgba(245, 158, 11, 0.35)' },
+    { id: 'rose', border: '#F43F5E', bg: 'rgba(244, 63, 94, 0.12)', text: '#FB7185', badgeBg: 'rgba(244, 63, 94, 0.22)', glow: 'rgba(244, 63, 94, 0.35)' },
+    { id: 'cyan', border: '#06B6D4', bg: 'rgba(6, 182, 212, 0.12)', text: '#22D3EE', badgeBg: 'rgba(6, 182, 212, 0.22)', glow: 'rgba(6, 182, 212, 0.35)' },
+    { id: 'orange', border: '#F97316', bg: 'rgba(249, 115, 22, 0.12)', text: '#FB923C', badgeBg: 'rgba(249, 115, 22, 0.22)', glow: 'rgba(249, 115, 22, 0.35)' },
+    { id: 'indigo', border: '#6366F1', bg: 'rgba(99, 102, 241, 0.12)', text: '#818CF8', badgeBg: 'rgba(99, 102, 241, 0.22)', glow: 'rgba(99, 102, 241, 0.35)' },
+    { id: 'teal', border: '#14B8A6', bg: 'rgba(20, 184, 166, 0.12)', text: '#2DD4BF', badgeBg: 'rgba(20, 184, 166, 0.22)', glow: 'rgba(20, 184, 166, 0.35)' },
+    { id: 'lime', border: '#84CC16', bg: 'rgba(132, 204, 22, 0.12)', text: '#A3E635', badgeBg: 'rgba(132, 204, 22, 0.22)', glow: 'rgba(132, 204, 22, 0.35)' },
+    { id: 'pink', border: '#EC4899', bg: 'rgba(236, 72, 153, 0.12)', text: '#F472B6', badgeBg: 'rgba(236, 72, 153, 0.22)', glow: 'rgba(236, 72, 153, 0.35)' },
   ];
   const DEFAULT_ADMIN_THEME = {
     id: 'blue', border: '#3B82F6', bg: 'rgba(59, 130, 246, 0.12)', text: '#60A5FA', badgeBg: 'rgba(59, 130, 246, 0.22)', glow: 'rgba(59, 130, 246, 0.35)'
@@ -377,7 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (userNavGroup) userNavGroup.style.display = 'none';
       if (btnPairModal) btnPairModal.style.display = 'none';
       if (btnRevokeSession) btnRevokeSession.style.display = 'none';
-      
+
       // Ocultar botón de cerrar sesión si no hay usuario autenticado
       logoutButtons.forEach(b => {
         b.style.display = 'none';
@@ -592,9 +592,10 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="device-card-title-group">
             <div class="device-name">${device.name}</div>
             <div class="device-location">📍 ${device.location}</div>
-            <div style="display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap;">
+            <div style="display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; align-items: center;">
               <span class="device-tariff-badge">💵 ${device.tariff || '$50.00 / mes'}</span>
               <span class="device-slots-badge">📊 Cupos: ${(device.items || []).length} / ${device.maxSlots || 10}</span>
+              ${device.operatingHours && device.operatingHours.enabled ? `<span class="schedule-pill" title="Horario programado: ${device.operatingHours.turnOnTime} a ${device.operatingHours.turnOffTime}">⏰ ${device.operatingHours.turnOnTime} - ${device.operatingHours.turnOffTime}</span>` : ''}
               ${isAdmin ? `<span class="device-user-badge" style="font-size:0.75rem; background:rgba(99,102,241,0.18); color:#A5B4FC; padding:2px 8px; border-radius:12px; border:1px solid rgba(99,102,241,0.3);">👤 Acceso: <strong>${device.tvUser || 'Solo Admin'}</strong></span>` : ''}
             </div>
           </div>
@@ -634,7 +635,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <span>🎬</span> Publicidad (${device.items.length})
           </button>
           <div class="device-secondary-btns">
-            ${isAdmin ? `<button class="btn btn-secondary btn-edit-device-settings" data-id="${device.id}" title="Configurar Tarifa y Pantalla">⚙️</button>` : ''}
+            ${isAdmin ? `<button class="btn btn-secondary btn-power-device" data-id="${device.id}" title="Control de Pantalla (Suspender / Despertar)">🌙</button>` : ''}
+            ${isAdmin ? `<button class="btn btn-secondary btn-edit-device-settings" data-id="${device.id}" title="Configurar Tarifa, Horarios y Pantalla">⚙️</button>` : ''}
             <button class="btn btn-secondary btn-alert-device" data-id="${device.id}" title="Enviar mensaje de alerta">📢</button>
             <button class="btn btn-secondary btn-sync-device" data-id="${device.id}" title="Sincronizar ahora">🔄</button>
             ${isAdmin ? `<button class="btn btn-danger btn-revoke-device" data-id="${device.id}" title="Desvincular">🗑️</button>` : ''}
@@ -646,6 +648,54 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Delegación y eventos de botones en cada card
+    devicesContainer.querySelectorAll('.btn-power-device').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const id = e.currentTarget.getAttribute('data-id');
+        const dev = devices.find(d => d.id === id);
+        if (!dev) return;
+        const action = confirm(`📺 Control Remoto de Energía para "${dev.name}":\n\n¿Deseas poner en REPOSO (Standby con pantalla apagada) este televisor?\n\n• Aceptar: Enviar orden de REPOSO / APAGAR PANTALLA\n• Cancelar: Volver sin cambios`) ? 'SLEEP_NOW' : null;
+        if (!action) {
+          // Preguntar si desea despertar
+          if (confirm(`☀️ ¿O deseas DESPERTAR / ENCENDER la pantalla de "${dev.name}" y reanudar la reproducción?`)) {
+            try {
+              const res = await apiFetch('/api/v1/admin/devices/power-command', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ deviceId: id, action: 'WAKE_NOW' })
+              });
+              const data = await res.json();
+              if (data.success) {
+                showToast(`☀️ ${data.message}`, '#10B981');
+                await loadDevicesFromBackend();
+              } else {
+                showToast(`⚠️ ${data.error || 'Error al despertar pantalla'}`, '#EF4444');
+              }
+            } catch (err) {
+              showToast('⚠️ Error al conectar con el servidor.', '#EF4444');
+            }
+          }
+          return;
+        }
+
+        try {
+          const res = await apiFetch('/api/v1/admin/devices/power-command', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ deviceId: id, action: 'SLEEP_NOW' })
+          });
+          const data = await res.json();
+          if (data.success) {
+            showToast(`🌙 ${data.message}`, '#10B981');
+            await loadDevicesFromBackend();
+          } else {
+            showToast(`⚠️ ${data.error || 'Error al suspender pantalla'}`, '#EF4444');
+          }
+        } catch (err) {
+          showToast('⚠️ Error al conectar con el servidor.', '#EF4444');
+        }
+      });
+    });
+
     devicesContainer.querySelectorAll('.btn-edit-device-settings').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const id = e.currentTarget.getAttribute('data-id');
@@ -674,7 +724,7 @@ document.addEventListener('DOMContentLoaded', () => {
     devicesContainer.querySelectorAll('.btn-sync-device').forEach(btn => {
       btn.addEventListener('click', () => {
         const dev = devices.find(d => d.id === currentSelectedTvId);
-        fetch('/api/v1/devices/sync/manifest').catch(() => {});
+        fetch('/api/v1/devices/sync/manifest').catch(() => { });
         showToast(`🔄 Sincronización forzada enviada a "${dev ? dev.name : 'Televisor'}".`);
       });
     });
@@ -701,7 +751,7 @@ document.addEventListener('DOMContentLoaded', () => {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ deviceId: id })
             });
-          } catch (err) {}
+          } catch (err) { }
           await loadDevicesFromBackend();
           showToast(`🔒 "${dev ? dev.name : 'Pantalla'}" desvinculada con éxito.`, '#EF4444');
         }
@@ -996,10 +1046,10 @@ document.addEventListener('DOMContentLoaded', () => {
       card.innerHTML = `
         <div class="item-index-badge">#${index + 1}</div>
         <div class="item-thumb-box">
-          ${item.mediaType === 'VIDEO' && item.url.endsWith('.mp4') ? 
-            `<video src="${item.url}" muted style="width:100%;height:100%;object-fit:cover;"></video>` :
-            `<img src="${item.url}" alt="${item.title}">`
-          }
+          ${item.mediaType === 'VIDEO' && item.url.endsWith('.mp4') ?
+          `<video src="${item.url}" muted style="width:100%;height:100%;object-fit:cover;"></video>` :
+          `<img src="${item.url}" alt="${item.title}">`
+        }
           <span class="item-thumb-tag">${item.mediaTag || item.mediaType}</span>
         </div>
 
@@ -1247,7 +1297,7 @@ document.addEventListener('DOMContentLoaded', () => {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ itemId: item.id })
             });
-          } catch (err) {}
+          } catch (err) { }
 
           showToast(`🗑️ Anuncio eliminado de ${device.name}.`, '#EF4444');
         }
@@ -1335,7 +1385,7 @@ document.addEventListener('DOMContentLoaded', () => {
       mediaEls[currentSimIndex].classList.add('active');
       if (mediaEls[currentSimIndex].tagName === 'VIDEO') {
         mediaEls[currentSimIndex].currentTime = 0;
-        mediaEls[currentSimIndex].play().catch(() => {});
+        mediaEls[currentSimIndex].play().catch(() => { });
       }
     }
 
@@ -1661,7 +1711,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btnRefreshDevices.addEventListener('click', async () => {
       try {
         await apiFetch('/api/v1/devices/sync-now', { method: 'POST' });
-      } catch (e) {}
+      } catch (e) { }
       await loadDevicesFromBackend();
       renderDevices();
       updateStats();
@@ -1792,7 +1842,7 @@ document.addEventListener('DOMContentLoaded', () => {
           } else {
             showToast(`🎉 ¡"${title}" publicado y transmitiendo en la pantalla!`, '#10B981');
             loadAndRenderApprovals();
-        loadAndRenderGlobalAds();
+            loadAndRenderGlobalAds();
           }
         } else {
           throw new Error(resData.error || "Error al procesar la subida");
@@ -1995,7 +2045,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (confirm('¿Deseas desvincular el televisor y cerrar la sesión actual? El televisor volverá a pedir escanear el QR o ingresar el código de 6 caracteres.')) {
         try {
           await apiFetch('/api/v1/admin/revoke-pairing', { method: 'POST' });
-        } catch (e) {}
+        } catch (e) { }
         sessionStorage.removeItem('0media_admin_session_paired');
         devices.forEach(d => {
           d.isPaired = false;
@@ -2013,7 +2063,7 @@ document.addEventListener('DOMContentLoaded', () => {
     sessionStorage.removeItem('0media_admin_session_paired');
     try {
       navigator.sendBeacon('/api/v1/admin/revoke-pairing');
-    } catch (e) {}
+    } catch (e) { }
   });
 
   // Detección automática al escanear QR (URL: ?code=A7X9K2)
@@ -2431,7 +2481,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click', async () => {
       try {
         await apiFetch('/api/v1/admin/logout', { method: 'POST' });
-      } catch (e) {}
+      } catch (e) { }
       localStorage.removeItem('0media_auth_token');
       localStorage.removeItem('0media_devices_v5');
       devices = [];
@@ -2549,7 +2599,7 @@ document.addEventListener('DOMContentLoaded', () => {
               showToast(`🎉 ¡"${title}" APROBADO! Ya está proyectándose en vivo en el televisor.`, '#10B981');
               await loadDevicesFromBackend();
               loadAndRenderApprovals();
-        loadAndRenderGlobalAds();
+              loadAndRenderGlobalAds();
             } else {
               showToast(`⚠️ ${resData.error || 'Error al aprobar'}`, '#EF4444');
             }
@@ -2577,7 +2627,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast(`❌ Anuncio "${title}" rechazado.`, '#EF4444');
                 await loadDevicesFromBackend();
                 loadAndRenderApprovals();
-        loadAndRenderGlobalAds();
+                loadAndRenderGlobalAds();
               } else {
                 showToast(`⚠️ ${resData.error || 'Error al rechazar'}`, '#EF4444');
               }
@@ -2674,9 +2724,9 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="available-device-footer">
               <span style="font-size:0.75rem;color:var(--text-muted);">Soporta: Fotos JPG/PNG, Videos MP4 y GIFs</span>
               ${isLinked
-                ? `<span style="padding:6px 14px;background:rgba(16,185,129,0.15);color:#6EE7B7;border:1px solid rgba(16,185,129,0.3);border-radius:6px;font-size:0.82rem;font-weight:600;">✅ Ya vinculado a esta pantalla</span>`
-                : `<button class="btn btn-primary btn-link-device-action" data-id="${s.id}" data-name="${s.name}" style="padding:7px 16px;font-size:0.85rem;background:linear-gradient(135deg,#2563EB,#4F46E5);"><span>🔗</span> Vincularme a esta Pantalla</button>`
-              }
+              ? `<span style="padding:6px 14px;background:rgba(16,185,129,0.15);color:#6EE7B7;border:1px solid rgba(16,185,129,0.3);border-radius:6px;font-size:0.82rem;font-weight:600;">✅ Ya vinculado a esta pantalla</span>`
+              : `<button class="btn btn-primary btn-link-device-action" data-id="${s.id}" data-name="${s.name}" style="padding:7px 16px;font-size:0.85rem;background:linear-gradient(135deg,#2563EB,#4F46E5);"><span>🔗</span> Vincularme a esta Pantalla</button>`
+            }
             </div>
           `;
           availableDevicesList.appendChild(card);
@@ -3003,6 +3053,26 @@ document.addEventListener('DOMContentLoaded', () => {
   const editDeviceMaxSlots = document.getElementById('edit-device-max-slots');
   const editDeviceUser = document.getElementById('edit-device-user');
   const editDevicePass = document.getElementById('edit-device-pass');
+  const editOperatingHoursEnabled = document.getElementById('edit-operating-hours-enabled');
+  const editTurnOnTime = document.getElementById('edit-turn-on-time');
+  const editTurnOffTime = document.getElementById('edit-turn-off-time');
+  const editScheduleDays = document.getElementById('edit-schedule-days');
+  const operatingHoursFields = document.getElementById('operating-hours-fields');
+
+  if (editScheduleDays) {
+    editScheduleDays.querySelectorAll('.day-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        chip.classList.toggle('active');
+      });
+    });
+  }
+
+  if (editOperatingHoursEnabled && operatingHoursFields) {
+    editOperatingHoursEnabled.addEventListener('change', () => {
+      operatingHoursFields.style.opacity = editOperatingHoursEnabled.checked ? '1' : '0.45';
+      operatingHoursFields.style.pointerEvents = editOperatingHoursEnabled.checked ? 'auto' : 'none';
+    });
+  }
 
   function openDeviceSettingsModal(dev) {
     if (!deviceSettingsModal || !dev) return;
@@ -3013,6 +3083,30 @@ document.addEventListener('DOMContentLoaded', () => {
     if (editDeviceMaxSlots) editDeviceMaxSlots.value = dev.maxSlots || 10;
     if (editDeviceUser) editDeviceUser.value = dev.tvUser || '';
     if (editDevicePass) editDevicePass.value = '';
+
+    const oh = dev.operatingHours || { enabled: false, turnOnTime: '08:00', turnOffTime: '22:00', activeDays: [1, 2, 3, 4, 5, 6, 7] };
+    if (editOperatingHoursEnabled) {
+      editOperatingHoursEnabled.checked = Boolean(oh.enabled);
+      if (operatingHoursFields) {
+        operatingHoursFields.style.opacity = oh.enabled ? '1' : '0.45';
+        operatingHoursFields.style.pointerEvents = oh.enabled ? 'auto' : 'none';
+      }
+    }
+    if (editTurnOnTime) editTurnOnTime.value = oh.turnOnTime || '08:00';
+    if (editTurnOffTime) editTurnOffTime.value = oh.turnOffTime || '22:00';
+
+    const activeDays = Array.isArray(oh.activeDays) && oh.activeDays.length > 0 ? oh.activeDays : [1, 2, 3, 4, 5, 6, 7];
+    if (editScheduleDays) {
+      editScheduleDays.querySelectorAll('.day-chip').forEach(chip => {
+        const dayNum = parseInt(chip.getAttribute('data-day'), 10);
+        if (activeDays.includes(dayNum)) {
+          chip.classList.add('active');
+        } else {
+          chip.classList.remove('active');
+        }
+      });
+    }
+
     deviceSettingsModal.classList.add('open');
   }
 
@@ -3034,16 +3128,29 @@ document.addEventListener('DOMContentLoaded', () => {
       const tvUser = editDeviceUser ? editDeviceUser.value.trim() : '';
       const tvPassword = editDevicePass ? editDevicePass.value : '';
 
+      const activeDays = [];
+      if (editScheduleDays) {
+        editScheduleDays.querySelectorAll('.day-chip.active').forEach(c => {
+          activeDays.push(parseInt(c.getAttribute('data-day'), 10));
+        });
+      }
+      const operatingHours = {
+        enabled: editOperatingHoursEnabled ? editOperatingHoursEnabled.checked : false,
+        turnOnTime: editTurnOnTime ? editTurnOnTime.value : '08:00',
+        turnOffTime: editTurnOffTime ? editTurnOffTime.value : '22:00',
+        activeDays: activeDays.length > 0 ? activeDays : [1, 2, 3, 4, 5, 6, 7]
+      };
+
       if (!deviceId) return;
       try {
         const res = await apiFetch('/api/v1/admin/update-device-settings', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ deviceId, name, location, tariff, maxSlots, tvUser, tvPassword })
+          body: JSON.stringify({ deviceId, name, location, tariff, maxSlots, tvUser, tvPassword, operatingHours })
         });
         const data = await res.json();
         if (data.success) {
-          showToast(`⚙️ Configuración y acceso de pantalla actualizados para "${name}".`, '#10B981');
+          showToast(`⚙️ Configuración y horario guardados para "${name}".`, '#10B981');
           closeDeviceSettingsModal();
           await loadDevicesFromBackend();
         } else {
@@ -3265,7 +3372,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (globalPreviewVid) {
           globalPreviewVid.style.display = 'block';
           globalPreviewVid.src = globalPendingDataUrl;
-          globalPreviewVid.play().catch(() => {});
+          globalPreviewVid.play().catch(() => { });
         }
       } else {
         if (globalPreviewVid) globalPreviewVid.style.display = 'none';

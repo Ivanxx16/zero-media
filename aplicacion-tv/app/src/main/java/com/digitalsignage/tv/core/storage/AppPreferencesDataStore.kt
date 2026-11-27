@@ -27,7 +27,11 @@ data class AppSettings(
     val isAudioMuted: Boolean,
     val volumeLevel: Int,
     val diagnosticsPin: String,
-    val lastSyncTimestamp: Long
+    val lastSyncTimestamp: Long,
+    val operatingHoursEnabled: Boolean = false,
+    val turnOnTime: String = "08:00",
+    val turnOffTime: String = "22:00",
+    val activeDays: List<Int> = listOf(1, 2, 3, 4, 5, 6, 7)
 )
 
 class AppPreferencesDataStore(private val context: Context) {
@@ -41,6 +45,10 @@ class AppPreferencesDataStore(private val context: Context) {
         private val KEY_VOLUME_LEVEL = intPreferencesKey("volume_level")
         private val KEY_DIAGNOSTICS_PIN = stringPreferencesKey("diagnostics_pin")
         private val KEY_LAST_SYNC_TIMESTAMP = longPreferencesKey("last_sync_timestamp")
+        private val KEY_SCHEDULE_ENABLED = booleanPreferencesKey("operating_hours_enabled")
+        private val KEY_SCHEDULE_TURN_ON = stringPreferencesKey("operating_hours_turn_on")
+        private val KEY_SCHEDULE_TURN_OFF = stringPreferencesKey("operating_hours_turn_off")
+        private val KEY_SCHEDULE_DAYS = stringPreferencesKey("operating_hours_days")
         private const val TAG = "AppPreferences"
     }
 
@@ -61,6 +69,9 @@ class AppPreferencesDataStore(private val context: Context) {
                 AppEnvironment.LAN_TEST
             }
 
+            val rawDays = prefs[KEY_SCHEDULE_DAYS] ?: "1,2,3,4,5,6,7"
+            val activeDays = rawDays.split(",").mapNotNull { it.trim().toIntOrNull() }.ifEmpty { listOf(1, 2, 3, 4, 5, 6, 7) }
+
             AppSettings(
                 environment = env,
                 customRestUrl = prefs[KEY_CUSTOM_REST_URL] ?: "",
@@ -69,7 +80,11 @@ class AppPreferencesDataStore(private val context: Context) {
                 isAudioMuted = prefs[KEY_AUDIO_MUTED] ?: false,
                 volumeLevel = prefs[KEY_VOLUME_LEVEL] ?: 100,
                 diagnosticsPin = prefs[KEY_DIAGNOSTICS_PIN] ?: "0000",
-                lastSyncTimestamp = prefs[KEY_LAST_SYNC_TIMESTAMP] ?: 0L
+                lastSyncTimestamp = prefs[KEY_LAST_SYNC_TIMESTAMP] ?: 0L,
+                operatingHoursEnabled = prefs[KEY_SCHEDULE_ENABLED] ?: false,
+                turnOnTime = prefs[KEY_SCHEDULE_TURN_ON] ?: "08:00",
+                turnOffTime = prefs[KEY_SCHEDULE_TURN_OFF] ?: "22:00",
+                activeDays = activeDays
             )
         }
 
@@ -131,6 +146,20 @@ class AppPreferencesDataStore(private val context: Context) {
     suspend fun setAudioMuted(muted: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[KEY_AUDIO_MUTED] = muted
+        }
+    }
+
+    suspend fun updateOperatingHours(
+        enabled: Boolean,
+        turnOnTime: String,
+        turnOffTime: String,
+        activeDays: List<Int>
+    ) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_SCHEDULE_ENABLED] = enabled
+            prefs[KEY_SCHEDULE_TURN_ON] = turnOnTime
+            prefs[KEY_SCHEDULE_TURN_OFF] = turnOffTime
+            prefs[KEY_SCHEDULE_DAYS] = activeDays.joinToString(",")
         }
     }
 }

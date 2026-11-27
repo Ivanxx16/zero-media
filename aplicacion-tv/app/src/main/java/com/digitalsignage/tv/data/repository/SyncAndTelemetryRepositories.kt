@@ -148,6 +148,17 @@ class SyncRepositoryImpl(
                 )
                 preferencesDataStore.updateLastSyncTimestamp(System.currentTimeMillis())
 
+                // 4. Update operating hours schedule if provided in remote settings
+                manifest.settings?.operatingHours?.let { oh ->
+                    preferencesDataStore.updateOperatingHours(
+                        enabled = oh.enabled,
+                        turnOnTime = oh.turnOnTime,
+                        turnOffTime = oh.turnOffTime,
+                        activeDays = oh.activeDays
+                    )
+                    SignageLogger.i(TAG, "Operating hours updated: enabled=${oh.enabled}, ${oh.turnOnTime} to ${oh.turnOffTime}, days=${oh.activeDays}")
+                }
+
                 AppResult.Success(true)
             } else {
                 AppResult.Error(AppException.ServerError(response.code(), response.message()))

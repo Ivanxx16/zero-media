@@ -144,6 +144,24 @@ class MainActivity : ComponentActivity() {
                     )
                 }
 
+                val isScreenStandby by playerViewModel.isScreenStandby.collectAsState()
+
+                LaunchedEffect(isScreenStandby) {
+                    if (isScreenStandby) {
+                        SignageLogger.i("MainActivity", "Activando reposo de pantalla: apagando brillo y liberando KEEP_SCREEN_ON.")
+                        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                        val lp = window.attributes
+                        lp.screenBrightness = 0.0f
+                        window.attributes = lp
+                    } else {
+                        SignageLogger.i("MainActivity", "Despertando televisor: restaurando KEEP_SCREEN_ON y brillo normal.")
+                        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                        val lp = window.attributes
+                        lp.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+                        window.attributes = lp
+                    }
+                }
+
                 var showDiagnosticsMenu by remember { mutableStateOf(false) }
                 var isLocallyPaired by remember { mutableStateOf(false) }
                 val pairingUiState by pairingViewModel.uiState.collectAsState()

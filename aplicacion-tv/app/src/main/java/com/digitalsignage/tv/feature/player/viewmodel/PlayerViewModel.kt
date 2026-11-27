@@ -29,6 +29,11 @@ import java.io.File
 sealed class PlayerUiState {
     object Loading : PlayerUiState()
     data class Standby(val message: String) : PlayerUiState()
+    data class PowerStandby(
+        val turnOnTime: String,
+        val turnOffTime: String,
+        val isManual: Boolean = false
+    ) : PlayerUiState()
     data class Playing(
         val item: PlaylistItem,
         val playlistIndex: Int,
@@ -74,11 +79,19 @@ class PlayerViewModel(
     private var isDiagnosticsVisible: Boolean = false
     private var isMuted: Boolean = false
 
+    private val _isScreenStandby = MutableStateFlow(false)
+    val isScreenStandby: StateFlow<Boolean> = _isScreenStandby.asStateFlow()
+
+    private var isForceSleeping: Boolean = false
+    private var operatingHoursJob: Job? = null
+    private var currentSchedule: com.digitalsignage.tv.core.storage.AppSettings? = null
+
     init {
         playerEngine.setListener(this)
         observePreferences()
         startSocketEventsListener()
         startHeartbeatLoop()
+        startScheduleChecker()
         initializePlayback()
     }
 
@@ -87,6 +100,8 @@ class PlayerViewModel(
             preferencesDataStore.settingsFlow.collect { settings ->
                 isMuted = settings.isAudioMuted
                 playerEngine.setMuted(isMuted)
+                currentSchedule = settings
+                evaluatePowerSchedule()
             }
         }
     }
@@ -102,6 +117,11 @@ class PlayerViewModel(
     }
 
     private suspend fun loadPlaylistAndStart() {
+        if (_isScreenStandby.value) {
+            SignageLogger.i(TAG, "Device currently in power standby. Skipping active media launch.")
+            return
+        }
+
         val playlist = getActivePlaylistUseCase()
         currentPlaylist = playlist
 
@@ -318,6 +338,22 @@ class PlayerViewModel(
                         when (event.action) {
                             "RELOAD_PLAYER" -> initializePlayback()
                             "CLEAR_CACHE" -> downloadManager.purgeOrphanedAssets()
+                            "SLEEP_DISPLAY" -> setManualSleep(true)
+                            "WAKE_DISPLAY" -> setManualSleep(false)
+                            "UPDATE_SCHEDULE" -> {
+                                event.params?.let { params ->
+                                    val ohMap = params["operatingHours"] as? Map<*, *>
+                                    if (ohMap != null) {
+                                        val enabled = ohMap["enabled"] as? Boolean ?: false
+                                        val turnOn = ohMap["turnOnTime"] as? String ?: "08:00"
+                                        val turnOff = ohMap["turnOffTime"] as? String ?: "22:00"
+                                        val days = (ohMap["activeDays"] as? List<*>)?.mapNotNull { (it as? Number)?.toInt() } ?: listOf(1, 2, 3, 4, 5, 6, 7)
+                                        viewModelScope.launch {
+                                            preferencesDataStore.updateOperatingHours(enabled, turnOn, turnOff, days)
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                     else -> {}
@@ -382,12 +418,130 @@ class PlayerViewModel(
         playerEngine.resume()
     }
 
+    fun setManualSleep(sleep: Boolean) {
+        isForceSleeping = sleep
+        if (sleep) {
+            enterPowerStandby(
+                turnOnTime = currentSchedule?.turnOnTime ?: "08:00",
+                turnOffTime = currentSchedule?.turnOffTime ?: "22:00",
+                isManual = true
+            )
+        } else {
+            exitPowerStandby()
+        }
+    }
+
+    fun wakeUpFromRemote() {
+        if (_isScreenStandby.value) {
+            exitPowerStandby()
+        }
+    }
+
+    private fun startScheduleChecker() {
+        operatingHoursJob?.cancel()
+        operatingHoursJob = viewModelScope.launch {
+            while (isActive) {
+                delay(15000L)
+                evaluatePowerSchedule()
+            }
+        }
+    }
+
+    fun evaluatePowerSchedule() {
+        if (isForceSleeping) {
+            if (!_isScreenStandby.value) {
+                enterPowerStandby(
+                    turnOnTime = currentSchedule?.turnOnTime ?: "08:00",
+                    turnOffTime = currentSchedule?.turnOffTime ?: "22:00",
+                    isManual = true
+                )
+            }
+            return
+        }
+
+        val sched = currentSchedule
+        if (sched == null || !sched.operatingHoursEnabled) {
+            if (_isScreenStandby.value) {
+                exitPowerStandby()
+            }
+            return
+        }
+
+        val isWithinHours = checkIsWithinHours(
+            turnOn = sched.turnOnTime,
+            turnOff = sched.turnOffTime,
+            activeDays = sched.activeDays
+        )
+
+        if (!isWithinHours) {
+            if (!_isScreenStandby.value) {
+                enterPowerStandby(sched.turnOnTime, sched.turnOffTime, isManual = false)
+            }
+        } else {
+            if (_isScreenStandby.value) {
+                exitPowerStandby()
+            }
+        }
+    }
+
+    private fun checkIsWithinHours(turnOn: String, turnOff: String, activeDays: List<Int>): Boolean {
+        return try {
+            val cal = java.util.Calendar.getInstance()
+            val currentDayOfWeek = when (cal.get(java.util.Calendar.DAY_OF_WEEK)) {
+                java.util.Calendar.MONDAY -> 1
+                java.util.Calendar.TUESDAY -> 2
+                java.util.Calendar.WEDNESDAY -> 3
+                java.util.Calendar.THURSDAY -> 4
+                java.util.Calendar.FRIDAY -> 5
+                java.util.Calendar.SATURDAY -> 6
+                java.util.Calendar.SUNDAY -> 7
+                else -> 1
+            }
+
+            if (!activeDays.contains(currentDayOfWeek)) {
+                return false
+            }
+
+            val currentMinutes = cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 + cal.get(java.util.Calendar.MINUTE)
+            val onParts = turnOn.split(":").map { it.trim().toInt() }
+            val offParts = turnOff.split(":").map { it.trim().toInt() }
+
+            val onMinutes = onParts[0] * 60 + onParts.getOrElse(1) { 0 }
+            val offMinutes = offParts[0] * 60 + offParts.getOrElse(1) { 0 }
+
+            if (onMinutes <= offMinutes) {
+                currentMinutes in onMinutes until offMinutes
+            } else {
+                currentMinutes >= onMinutes || currentMinutes < offMinutes
+            }
+        } catch (e: Exception) {
+            SignageLogger.e(TAG, "Error evaluating schedule hours", e)
+            true
+        }
+    }
+
+    private fun enterPowerStandby(turnOnTime: String, turnOffTime: String, isManual: Boolean) {
+        SignageLogger.i(TAG, "Entering power standby mode (on: $turnOnTime, off: $turnOffTime, manual: $isManual). Pausing playback engine.")
+        _isScreenStandby.value = true
+        imageTimerJob?.cancel()
+        playerEngine.pause()
+        _uiState.value = PlayerUiState.PowerStandby(turnOnTime = turnOnTime, turnOffTime = turnOffTime, isManual = isManual)
+    }
+
+    private fun exitPowerStandby() {
+        SignageLogger.i(TAG, "Exiting power standby mode. Resuming active media playback.")
+        _isScreenStandby.value = false
+        isForceSleeping = false
+        initializePlayback()
+    }
+
     override fun onCleared() {
         super.onCleared()
         imageTimerJob?.cancel()
         socketEventsJob?.cancel()
         heartbeatJob?.cancel()
         overlayAlertTimerJob?.cancel()
+        operatingHoursJob?.cancel()
         playerEngine.release()
     }
 }

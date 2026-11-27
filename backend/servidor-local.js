@@ -329,6 +329,7 @@ try {
       items TEXT,
       last_initiated INTEGER,
       last_paired_at INTEGER,
+      operating_hours TEXT,
       updated_at INTEGER
     );
     CREATE TABLE IF NOT EXISTS global_items (
@@ -381,6 +382,7 @@ try {
   try { sqliteDb.exec("ALTER TABLE devices ADD COLUMN max_slots INTEGER DEFAULT 10;"); } catch (e) {}
   try { sqliteDb.exec("ALTER TABLE devices ADD COLUMN tv_user TEXT;"); } catch (e) {}
   try { sqliteDb.exec("ALTER TABLE devices ADD COLUMN tv_password_hash TEXT;"); } catch (e) {}
+  try { sqliteDb.exec("ALTER TABLE devices ADD COLUMN operating_hours TEXT;"); } catch (e) {}
   try { sqliteDb.exec("ALTER TABLE global_items ADD COLUMN owner_id TEXT;"); } catch (e) {}
   try { sqliteDb.exec("ALTER TABLE global_items ADD COLUMN client_name TEXT;"); } catch (e) {}
   try { sqliteDb.exec("ALTER TABLE global_items ADD COLUMN valid_from TEXT;"); } catch (e) {}
@@ -451,7 +453,13 @@ function loadState() {
         tariff: row.tariff || '',
         maxSlots: row.max_slots || 10,
         tvUser: row.tv_user || '',
-        tvPasswordHash: row.tv_password_hash || ''
+        tvPasswordHash: row.tv_password_hash || '',
+        operatingHours: row.operating_hours ? JSON.parse(row.operating_hours) : {
+          enabled: false,
+          turnOnTime: '08:00',
+          turnOffTime: '22:00',
+          activeDays: [1, 2, 3, 4, 5, 6, 7]
+        }
       }));
 
       state.customItems = itemRows.map(row => ({
@@ -534,9 +542,9 @@ function saveState() {
           id, fingerprint, name, location, model, resolution, ip, status,
           pairing_code, is_paired, has_been_paired, temp_token, permanent_token,
           tenant_id, ram_usage, free_disk, temp, campaign_name, device_info,
-          items, last_initiated, last_paired_at, tariff, max_slots, tv_user, tv_password_hash, updated_at
+          items, last_initiated, last_paired_at, tariff, max_slots, tv_user, tv_password_hash, operating_hours, updated_at
         ) VALUES (
-          ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+          ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
         )
       `);
 
@@ -549,7 +557,9 @@ function saveState() {
           d.tenantId, d.ramUsage, d.freeDisk, d.temp, d.campaignName,
           JSON.stringify(d.deviceInfo || {}), JSON.stringify(d.items || []),
           d.lastInitiated || 0, d.lastPairedAt || 0, d.tariff || '', parseInt(d.maxSlots, 10) || 10,
-          d.tvUser || '', d.tvPasswordHash || '', Date.now()
+          d.tvUser || '', d.tvPasswordHash || '',
+          JSON.stringify(d.operatingHours || { enabled: false, turnOnTime: '08:00', turnOffTime: '22:00', activeDays: [1, 2, 3, 4, 5, 6, 7] }),
+          Date.now()
         );
       }
 
@@ -791,6 +801,26 @@ function notifyDeviceRevoked(deviceId, reason = 'Desvinculado por el administrad
     }
   }
   console.log(`[WS NOTIFY] Revocación "device:revoked" enviada a televisor ${deviceId}.`);
+}
+
+// Envío de comandos remotos en tiempo real (Suspender pantalla, Encender, Recargar)
+function sendDeviceCommand(deviceId, action, params = {}) {
+  const payload = JSON.stringify(['device:command', {
+    commandId: 'cmd_' + Date.now(),
+    action: action,
+    params: params
+  }]);
+  const socketIoMsg = '42' + payload;
+
+  let count = 0;
+  for (const [sid, client] of activeLiveSockets.entries()) {
+    if (!deviceId || client.deviceId === deviceId) {
+      sendWsMessage(client.socket, socketIoMsg);
+      count++;
+    }
+  }
+  console.log(`[WS COMMAND] Comando "${action}" emitido a ${count} pantalla(s) (destino: ${deviceId || 'TODAS'}).`);
+  return count;
 }
 
 // ================= 5. SERVIDOR HTTP PRINCIPAL =================
@@ -1429,11 +1459,68 @@ const server = http.createServer((req, res) => {
       if (data.tvPassword && String(data.tvPassword).trim()) {
         dev.tvPasswordHash = hashPassword(String(data.tvPassword).trim());
       }
+      if (data.operatingHours !== undefined) {
+        const oh = data.operatingHours || {};
+        dev.operatingHours = {
+          enabled: Boolean(oh.enabled),
+          turnOnTime: typeof oh.turnOnTime === 'string' && oh.turnOnTime ? oh.turnOnTime.trim() : '08:00',
+          turnOffTime: typeof oh.turnOffTime === 'string' && oh.turnOffTime ? oh.turnOffTime.trim() : '22:00',
+          activeDays: Array.isArray(oh.activeDays) && oh.activeDays.length > 0 ? oh.activeDays.map(Number) : [1, 2, 3, 4, 5, 6, 7]
+        };
+        sendDeviceCommand(dev.id, 'UPDATE_SCHEDULE', { operatingHours: dev.operatingHours });
+        broadcastPlaylistUpdated(state.manifestVersion, 'Horario de operación actualizado', dev.id);
+      }
 
       saveState();
-      console.log(`[DEVICE SETTINGS] Pantalla "${dev.name}": Tarifa=${dev.tariff}, Ubicación=${dev.location}, Cupos=${dev.maxSlots}.`);
+      console.log(`[DEVICE SETTINGS] Pantalla "${dev.name}": Tarifa=${dev.tariff}, Ubicación=${dev.location}, Cupos=${dev.maxSlots}, HorarioActivo=${dev.operatingHours?.enabled}.`);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ success: true, device: dev }));
+    });
+    return;
+  }
+
+  // 1.1 COMANDO DE CONTROL DE ENERGÍA Y PANTALLA (SUSPENDER / DESPERTAR)
+  if (req.method === 'POST' && url === '/api/v1/admin/devices/power-command') {
+    if (!checkAdminAuth(req)) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: "No autorizado." }));
+      return;
+    }
+
+    parseBody(data => {
+      const { deviceId, action } = data; // 'SLEEP_NOW' | 'WAKE_NOW' | 'RELOAD_PLAYER'
+      if (!action) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: "Falta la acción a ejecutar." }));
+        return;
+      }
+
+      let targetDev = null;
+      if (deviceId && deviceId !== 'ALL') {
+        targetDev = state.devices.find(d => d.id === deviceId);
+        if (!targetDev) {
+          res.writeHead(404, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: "Pantalla no encontrada." }));
+          return;
+        }
+      }
+
+      let cmdAction = action;
+      if (action === 'SLEEP_NOW') cmdAction = 'SLEEP_DISPLAY';
+      if (action === 'WAKE_NOW') cmdAction = 'WAKE_DISPLAY';
+
+      const targetId = deviceId === 'ALL' ? null : deviceId;
+      const count = sendDeviceCommand(targetId, cmdAction, {
+        timestamp: Date.now(),
+        reason: 'Control manual desde el panel'
+      });
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: true,
+        message: `Comando "${action}" enviado a ${count} televisor(es) en tiempo real.`,
+        dispatchedCount: count
+      }));
     });
     return;
   }
@@ -2681,7 +2768,13 @@ const server = http.createServer((req, res) => {
       settings: {
         orientation: "LANDSCAPE",
         audioMuted: false,
-        heartbeatIntervalSeconds: 15
+        heartbeatIntervalSeconds: 15,
+        operatingHours: device.operatingHours || {
+          enabled: false,
+          turnOnTime: "08:00",
+          turnOffTime: "22:00",
+          activeDays: [1, 2, 3, 4, 5, 6, 7]
+        }
       },
       campaigns: campaigns,
       assets: assets

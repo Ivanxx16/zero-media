@@ -49,7 +49,15 @@ data class ManifestResponse(
 data class DeviceRemoteSettingsDto(
     @SerializedName("orientation") val orientation: String? = "LANDSCAPE",
     @SerializedName("audioMuted") val audioMuted: Boolean = false,
-    @SerializedName("heartbeatIntervalSeconds") val heartbeatIntervalSeconds: Int = 60
+    @SerializedName("heartbeatIntervalSeconds") val heartbeatIntervalSeconds: Int = 60,
+    @SerializedName("operatingHours") val operatingHours: OperatingHoursDto? = null
+)
+
+data class OperatingHoursDto(
+    @SerializedName("enabled") val enabled: Boolean = false,
+    @SerializedName("turnOnTime") val turnOnTime: String = "08:00",
+    @SerializedName("turnOffTime") val turnOffTime: String = "22:00",
+    @SerializedName("activeDays") val activeDays: List<Int> = listOf(1, 2, 3, 4, 5, 6, 7)
 )
 
 data class CampaignDto(

@@ -88,6 +88,10 @@ fun PlayerScreen(
             .focusable()
             .onKeyEvent { keyEvent ->
                 if (keyEvent.type == KeyEventType.KeyDown) {
+                    if (uiState is PlayerUiState.PowerStandby) {
+                        viewModel.wakeUpFromRemote()
+                        return@onKeyEvent true
+                    }
                     when (keyEvent.key) {
                         Key.DirectionUp, Key.Menu -> {
                             viewModel.toggleDiagnostics()
@@ -115,6 +119,12 @@ fun PlayerScreen(
                     message = state.message,
                     onOpenDiagnostics = onOpenDiagnostics,
                     onSyncNow = { viewModel.triggerBackgroundSyncAndDownload() }
+                )
+            }
+            is PlayerUiState.PowerStandby -> {
+                PlayerPowerStandbyScreen(
+                    state = state,
+                    onWakeUp = { viewModel.wakeUpFromRemote() }
                 )
             }
             is PlayerUiState.Playing -> {
@@ -410,6 +420,42 @@ fun TechnicianHudOverlay(
                 text = "Presione [BACK] para abrir menú de diagnóstico completo",
                 color = TextMuted,
                 fontSize = 11.sp
+            )
+        }
+    }
+}
+
+@Composable
+fun PlayerPowerStandbyScreen(
+    state: PlayerUiState.PowerStandby,
+    onWakeUp: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color.Black)
+            .clickable { onWakeUp() }
+            .padding(24.dp),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = if (state.isManual) "🌙 Pantalla en suspensión manual" else "🌙 Pantalla en reposo programado (${state.turnOffTime} a ${state.turnOnTime})",
+                color = Color.White.copy(alpha = 0.22f),
+                fontSize = 13.sp,
+                fontFamily = FontFamily.SansSerif,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = "Presione cualquier botón del control para encender",
+                color = Color.White.copy(alpha = 0.12f),
+                fontSize = 11.sp,
+                fontFamily = FontFamily.SansSerif,
+                textAlign = TextAlign.Center
             )
         }
     }
