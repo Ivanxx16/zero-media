@@ -57,7 +57,7 @@ const ADMIN_SECRET = process.env.ADMIN_SECRET || null;
 // ================= CONFIGURACIÓN DE SEGURIDAD Y PRODUCCIÓN =================
 const ADMIN_USER = process.env.ADMIN_USER || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || null;
-const AUTH_ENABLED = process.env.AUTH_ENABLED === 'true' || Boolean(ADMIN_PASSWORD);
+const AUTH_ENABLED = process.env.AUTH_ENABLED !== 'false';
 const SESSION_SECRET = process.env.SESSION_SECRET || ('0media_' + crypto.randomBytes(24).toString('hex'));
 
 // Almacenamiento en la nube (S3 / Cloudflare R2 / MinIO / CDN)
@@ -147,11 +147,6 @@ function getAuthUser(req) {
   // 3. Clave estática secreta de integración (ADMIN_SECRET)
   if (ADMIN_SECRET && req.headers['x-admin-secret'] === ADMIN_SECRET) {
     return { id: 'admin', username: ADMIN_USER || 'admin', role: 'ADMIN', name: 'SuperAdmin', company: '0Media Digital Signage' };
-  }
-
-  // 4. Si la autenticación global está desactivada en modo dev, retornar usuario admin por defecto
-  if (!AUTH_ENABLED) {
-    return { id: 'admin', username: ADMIN_USER || 'admin', role: 'ADMIN', name: 'Administrador 0Media', company: '0Media Digital Signage' };
   }
 
   return null;
@@ -989,7 +984,7 @@ const server = http.createServer((req, res) => {
       const password = data.password || '';
 
       // 1. Probar credenciales de SuperAdmin
-      const isDevFallback = !ADMIN_PASSWORD && (password === 'admin' || password === 'password123' || !AUTH_ENABLED);
+      const isDevFallback = !ADMIN_PASSWORD && (password === 'admin' || password === 'password123' || password === '');
       const validAdmin = (username.toLowerCase() === ADMIN_USER.toLowerCase()) && 
         ((storedAdminHash && verifyPassword(password, storedAdminHash)) || isDevFallback);
       if (validAdmin) {

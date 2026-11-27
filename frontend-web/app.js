@@ -287,7 +287,12 @@ document.addEventListener('DOMContentLoaded', () => {
         clearTimeout(timeoutId);
 
         if (res.status === 401 && endpoint !== '/api/v1/admin/login' && endpoint !== '/api/v1/admin/auth-status') {
-          openLoginModal();
+          if (currentUser) {
+            currentUser = null;
+            applyUserRoleUI();
+            switchView('welcome');
+            openLoginModal();
+          }
           return res;
         }
 
@@ -398,6 +403,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let pairingModalDismissed = false;
 
   async function loadDevicesFromBackend() {
+    if (!currentUser) return;
     try {
       const res = await apiFetch('/api/v1/admin/devices');
       const data = await res.json();
@@ -3020,22 +3026,21 @@ document.addEventListener('DOMContentLoaded', () => {
       if (data.isAuthenticated && data.user) {
         currentUser = data.user;
         applyUserRoleUI();
-        if (window.location.hash === '#welcome' || window.location.pathname.includes('/welcome') || !window.location.hash) {
-          switchView('welcome');
-        } else {
+        await loadDevicesFromBackend();
+        if (window.location.hash && window.location.hash !== '#welcome') {
           handleHash();
+        } else {
+          switchView('welcome');
         }
       } else {
         currentUser = null;
+        localStorage.removeItem('0media_auth_token');
         applyUserRoleUI();
-        if (window.location.hash === '#welcome' || window.location.pathname.includes('/welcome') || !window.location.hash) {
-          switchView('welcome');
-        } else {
-          handleHash();
-        }
+        switchView('welcome');
       }
     } catch (e) {
       currentUser = null;
+      localStorage.removeItem('0media_auth_token');
       applyUserRoleUI();
       switchView('welcome');
     }
@@ -3702,23 +3707,18 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateMasterClock, 1000);
   }
 
-  renderDevices();
-  updateStats();
-  renderTvSelector();
+  // 1. Inicializar UI en modo visitante por defecto y asegurar pantalla de bienvenida
+  applyUserRoleUI();
+  switchView('welcome');
 
-  // Verificar autenticación y cargar pantallas
+  // 2. Comprobar autenticación en el servidor (sin asumir sesión activa previa)
   checkAuthOnStartup();
-  loadDevicesFromBackend();
 
-  // Monitoreo periódico en segundo plano cada 3.5 segundos
+  // 3. Monitoreo periódico en segundo plano solo cuando haya un usuario autenticado
   setInterval(() => {
-    loadDevicesFromBackend();
+    if (currentUser) {
+      loadDevicesFromBackend();
+    }
   }, 3500);
-
-  if (window.location.hash) {
-    handleHash();
-  } else {
-    switchView(currentUser ? (currentUser.role === 'ADMIN' ? 'devices' : 'user-portal') : 'welcome');
-  }
 
 });
