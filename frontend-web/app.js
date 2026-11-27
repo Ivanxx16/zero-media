@@ -320,6 +320,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const uploadNotice = document.getElementById('upload-client-notice');
     const inputClientName = document.getElementById('input-ad-client-name');
     const inputClientPhone = document.getElementById('input-ad-client-phone');
+    const navWelcome = document.getElementById('nav-welcome');
     const adminNavGroup = document.getElementById('admin-nav-group');
     const userNavGroup = document.getElementById('user-nav-group');
     const sidebarAvatar = document.getElementById('sidebar-user-avatar');
@@ -329,6 +330,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const logoutButtons = document.querySelectorAll('.btn-logout-action, #btn-sidebar-logout, #btn-admin-logout');
 
     if (currentUser) {
+      // Una vez logueado, ocultar la página de bienvenida Zero Media del menú lateral
+      if (navWelcome) navWelcome.style.display = 'none';
+
       // Al loguearse (como Admin o como Usuario), mostrar siempre el botón de cerrar sesión en el sidebar
       logoutButtons.forEach(b => {
         b.style.display = 'inline-flex';
@@ -376,6 +380,9 @@ document.addEventListener('DOMContentLoaded', () => {
         renderUserPortal();
       }
     } else {
+      // Modo visitante antes del registro / login: mostrar página de bienvenida Zero Media
+      if (navWelcome) navWelcome.style.display = 'flex';
+
       if (roleIcon) roleIcon.textContent = '👋';
       if (displayName) displayName.textContent = 'Visitante';
       if (sidebarAvatar) sidebarAvatar.textContent = 'ZM';
@@ -466,6 +473,11 @@ document.addEventListener('DOMContentLoaded', () => {
       targetView = currentUser ? (currentUser.role === 'ADMIN' ? 'devices' : 'user-portal') : 'welcome';
     }
 
+    // Si ya está autenticado, no permitir volver a la página de bienvenida de visitante
+    if (currentUser && targetView === 'welcome') {
+      targetView = currentUser.role === 'ADMIN' ? 'devices' : 'user-portal';
+    }
+
     // Si es usuario normal de TV o cliente, no permitir ingresar a vistas de admin
     if (currentUser && currentUser.role !== 'ADMIN' && (targetView === 'devices' || targetView === 'approvals' || targetView === 'playlists' || targetView === 'global-ads')) {
       targetView = 'user-portal';
@@ -514,7 +526,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function handleHash() {
     const hash = window.location.hash.replace('#', '');
     if (hash === 'welcome') {
-      switchView('welcome');
+      switchView(currentUser ? (currentUser.role === 'ADMIN' ? 'devices' : 'user-portal') : 'welcome');
     } else if (hash === 'approvals') {
       switchView('approvals');
     } else if (hash === 'playlists') {
@@ -3033,7 +3045,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.location.hash && window.location.hash !== '#welcome') {
           handleHash();
         } else {
-          switchView('welcome');
+          switchView(currentUser.role === 'ADMIN' ? 'devices' : 'user-portal');
         }
       } else {
         currentUser = null;
