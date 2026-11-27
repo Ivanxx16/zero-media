@@ -406,19 +406,139 @@ body {
   margin-top: 4px;
 }
 
-/* SECTION HEADER */
+/* ================= ENCABEZADOS DE SECCIÓN CENTRADOS Y SECCIONADOS ================= */
 .section-header {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-top: 3px solid var(--primary);
+  border-radius: var(--radius-lg);
+  padding: 24px 28px;
+  margin-bottom: 24px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 20px;
+  text-align: center;
+  position: relative;
+  box-shadow: var(--shadow-sm);
+  gap: 6px;
 }
 
+/* Modificadores de color de acento por categoría */
+.section-header.header-amber {
+  border-top-color: var(--warning);
+}
+
+.section-header.header-emerald {
+  border-top-color: var(--success);
+}
+
+.section-header.header-indigo {
+  border-top-color: #6366F1;
+}
+
+/* Badge superior pequeño de categoría */
+.section-header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--primary-subtle);
+  color: var(--primary-light);
+  border: 1px solid rgba(37, 99, 235, 0.35);
+  padding: 4px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.section-header-badge.badge-amber {
+  background: rgba(245, 158, 11, 0.12);
+  color: #FBBF24;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.section-header-badge.badge-emerald {
+  background: rgba(16, 185, 129, 0.12);
+  color: #34D399;
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.section-header-badge.badge-indigo {
+  background: rgba(99, 102, 241, 0.14);
+  color: #A5B4FC;
+  border-color: rgba(99, 102, 241, 0.35);
+}
+
+/* Título de sección imponente y formal */
 .section-title {
   font-family: var(--font-heading);
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin: 0;
+  letter-spacing: -0.02em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  line-height: 1.25;
+}
+
+/* Barra divisoria de anclaje visual para que el título no quede vacío */
+.section-title-divider {
+  width: 48px;
+  height: 3px;
+  background: var(--primary);
+  border-radius: 2px;
+  margin: 6px auto;
+}
+
+.header-amber .section-title-divider {
+  background: var(--warning);
+}
+
+.header-emerald .section-title-divider {
+  background: var(--success);
+}
+
+.header-indigo .section-title-divider {
+  background: #6366F1;
+}
+
+/* Subtítulo descriptivo centrado */
+.section-subtitle {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  max-width: 720px;
+  margin: 0 auto;
+  line-height: 1.55;
+}
+
+/* Acciones centradas integradas */
+.section-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+/* Variante compacta para subsecciones secundarias dentro de la misma vista */
+.section-header-compact {
+  padding: 18px 22px;
+  margin-bottom: 20px;
+  border-top-width: 2px;
+}
+
+.section-header-compact .section-title {
   font-size: 1.25rem;
-  font-weight: 700;
-  color: #FFF;
+}
+
+.section-header-compact .section-subtitle {
+  font-size: 0.84rem;
 }
 
 /* ================= VISTA 1: PANTALLAS EN VIVO (CARDS MEJOR UBICADAS) ================= */
@@ -647,16 +767,24 @@ body {
 .tv-selector-title {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .tv-selector-title .icon {
-  font-size: 1.4rem;
+  font-size: 1.25rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .tv-selector-title strong {
   font-family: var(--font-heading);
   font-size: 1.05rem;
+  font-weight: 700;
   color: #FFF;
 }
 
@@ -811,6 +939,9 @@ body {
   font-size: 1.05rem;
   font-weight: 700;
   color: #FFF;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .badge-live-tv {

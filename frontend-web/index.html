@@ -219,6 +219,21 @@
 
       <!-- ================= VISTA 1: PANTALLAS EN VIVO ================= -->
       <section class="view-section" id="view-devices">
+        <!-- Section Header Principal Centrado -->
+        <div class="section-header">
+          <span class="section-header-badge">🖥️ Monitoreo & Telemetría en Vivo</span>
+          <h3 class="section-title">Dispositivos y Pantallas Conectadas</h3>
+          <div class="section-title-divider"></div>
+          <p class="section-subtitle">
+            Monitorea en tiempo real la emisión publicitaria, el estado de salud, temperatura y conectividad de cada televisor en la red.
+          </p>
+          <div class="section-actions">
+            <button class="btn btn-secondary" id="btn-refresh-devices">
+              <span>🔄</span> Refrescar Pantallas
+            </button>
+          </div>
+        </div>
+
         <!-- Top Stats Row -->
         <div class="stats-grid">
           <div class="stat-card">
@@ -246,18 +261,6 @@
           </div>
         </div>
 
-        <!-- Devices Section Header -->
-        <div class="section-header">
-          <div>
-            <h3 class="section-title">Dispositivos Vinculados al Sistema</h3>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Monitorea en tiempo real qué
-              publicidad se está proyectando en cada televisor y su estado de salud.</p>
-          </div>
-          <button class="btn btn-secondary" id="btn-refresh-devices">
-            <span>🔄</span> Refrescar Pantallas
-          </button>
-        </div>
-
         <!-- Devices Grid -->
         <div class="devices-grid" id="devices-container">
           <!-- Generado dinámicamente por JavaScript -->
@@ -266,17 +269,18 @@
 
       <!-- ================= VISTA 2: APROBACIONES PENDIENTES (ADMIN EXCLUSIVO) ================= -->
       <section class="view-section" id="view-approvals">
-        <div class="section-header">
-          <div>
-            <h3 class="section-title">⏳ Bandeja de Aprobación de Publicidades</h3>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
-              Revisa las solicitudes de publicidad enviadas por usuarios anunciantes. Al aprobar un anuncio, saldrá al
-              aire de inmediato en la pantalla seleccionada.
-            </p>
+        <div class="section-header header-amber">
+          <span class="section-header-badge badge-amber">⚖️ Moderación y Control de Calidad</span>
+          <h3 class="section-title">⏳ Bandeja de Aprobación de Publicidades</h3>
+          <div class="section-title-divider"></div>
+          <p class="section-subtitle">
+            Revisa, previsualiza y autoriza las solicitudes de publicidad enviadas por usuarios anunciantes. Al aprobar un anuncio, este entrará en rotación activa al instante.
+          </p>
+          <div class="section-actions">
+            <button class="btn btn-secondary" id="btn-refresh-approvals">
+              <span>🔄</span> Refrescar Aprobaciones
+            </button>
           </div>
-          <button class="btn btn-secondary" id="btn-refresh-approvals">
-            <span>🔄</span> Refrescar Aprobaciones
-          </button>
         </div>
 
         <div class="approvals-grid" id="pending-approvals-container">
@@ -286,17 +290,18 @@
 
       <!-- ================= VISTA 3: LISTA DE CAMPAÑAS ================= -->
       <section class="view-section" id="view-playlists">
-        <div class="section-header">
-          <div>
-            <h3 class="section-title">Programación de Publicidad por Televisor</h3>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
-              Selecciona cualquier televisor vinculado para subirle y asignarle videos, fotos o GIFs de forma
-              completamente independiente.
-            </p>
+        <div class="section-header header-indigo">
+          <span class="section-header-badge badge-indigo">🎬 Parrilla y Gestión Multimedia</span>
+          <h3 class="section-title">📺 Programación de Publicidad por Televisor</h3>
+          <div class="section-title-divider"></div>
+          <p class="section-subtitle">
+            Selecciona cualquier pantalla vinculada para administrar su secuencia de videos, fotos y GIFs de forma individual, configurar duraciones y horarios de encendido y apagado.
+          </p>
+          <div class="section-actions">
+            <button class="btn btn-primary" id="btn-sync-all">
+              <span>🔄</span> Sincronizar Todos los Televisores
+            </button>
           </div>
-          <button class="btn btn-primary" id="btn-sync-all">
-            <span>🔄</span> Sincronizar Todos los Televisores
-          </button>
         </div>
 
         <!-- APARTADO DE SELECCIÓN DE TELEVISOR VINCULADO -->
@@ -536,17 +541,18 @@
         </div>
 
         <!-- SECCIÓN: MIS PUBLICIDADES EN ESTE TELEVISOR -->
-        <div class="section-header">
-          <div>
-            <h3 class="section-title">Mis Publicidades en esta Pantalla</h3>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
-              Revisa el estado de tus fotos, videos y GIFs asignados a este televisor y consulta el contador de
-              emisiones en vivo.
-            </p>
+        <div class="section-header header-emerald">
+          <span class="section-header-badge badge-emerald">📊 Emisión Comercial en Vivo</span>
+          <h3 class="section-title">Mis Publicidades en esta Pantalla</h3>
+          <div class="section-title-divider"></div>
+          <p class="section-subtitle">
+            Supervisa el estado de tus fotos, videos y animaciones asignados a este televisor y verifica el conteo de emisiones en vivo.
+          </p>
+          <div class="section-actions">
+            <button class="btn btn-secondary" id="btn-refresh-user-ads">
+              <span>🔄</span> Actualizar Estado
+            </button>
           </div>
-          <button class="btn btn-secondary" id="btn-refresh-user-ads">
-            <span>🔄</span> Actualizar Estado
-          </button>
         </div>
 
         <div class="user-ads-grid" id="user-portal-ads-container">
@@ -556,27 +562,29 @@
 
       <!-- ================= VISTA 5: PUBLICIDAD GENERAL (SOLO ADMIN) ================= -->
       <section class="view-section" id="view-global-ads">
+        <!-- Section Header Principal Centrado -->
         <div class="section-header">
-          <div>
-            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-              <h3 class="section-title">🌐 Publicidad General — Red Completa de Televisores</h3>
-              <span class="badge"
-                style="background: rgba(37, 99, 235, 0.2); color: #60A5FA; border: 1px solid rgba(37, 99, 235, 0.4); font-size: 0.75rem; padding: 3px 10px; border-radius: 20px; font-weight: 700;">
-                👑 Exclusivo Administrador
-              </span>
-              <span class="badge"
-                style="background: rgba(16, 185, 129, 0.18); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.4); font-size: 0.75rem; padding: 3px 10px; border-radius: 20px; font-weight: 700;">
-                ⚡ Prioridad Máxima
-              </span>
-            </div>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
-              Sube y administra publicidad institucional, avisos o campañas que se transmitirán <strong>automáticamente
-                en TODOS los televisores vinculados</strong> en la red de 0Media con máxima prioridad.
-            </p>
+          <span class="section-header-badge">🌐 Transmisión Global Simultánea</span>
+          <div style="display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap;">
+            <h3 class="section-title">Publicidad General — Red Completa de Televisores</h3>
+            <span class="badge"
+              style="background: var(--primary-subtle); color: #93C5FD; border: 1px solid rgba(37, 99, 235, 0.35); font-size: 0.72rem; padding: 3px 10px; border-radius: var(--radius-sm); font-weight: 700;">
+              👑 Exclusivo Administrador
+            </span>
+            <span class="badge"
+              style="background: rgba(16, 185, 129, 0.15); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.35); font-size: 0.72rem; padding: 3px 10px; border-radius: var(--radius-sm); font-weight: 700;">
+              ⚡ Prioridad Máxima
+            </span>
           </div>
-          <button class="btn btn-secondary" id="btn-refresh-global-ads" style="gap: 8px;">
-            <span>🔄</span> Actualizar Red
-          </button>
+          <div class="section-title-divider"></div>
+          <p class="section-subtitle">
+            Sube y administra publicidad institucional, avisos o campañas que se transmitirán <strong>automáticamente en TODOS los televisores vinculados</strong> en la red de 0Media con máxima prioridad.
+          </p>
+          <div class="section-actions">
+            <button class="btn btn-secondary" id="btn-refresh-global-ads" style="gap: 8px;">
+              <span>🔄</span> Actualizar Red
+            </button>
+          </div>
         </div>
 
         <!-- Banner de Estadísticas y Cobertura de Publicidad General -->
@@ -729,14 +737,13 @@
         </div>
 
         <!-- SECCIÓN: LISTADO DE PUBLICIDADES GENERALES ACTIVAS -->
-        <div class="section-header">
-          <div>
-            <h3 class="section-title">Publicidades Generales en Emisión</h3>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
-              Estas publicidades se están reproduciendo activamente en todos los televisores vinculados. Puedes
-              modificar su duración o retirarlas en cualquier momento.
-            </p>
-          </div>
+        <div class="section-header section-header-compact">
+          <span class="section-header-badge">📢 Rotación Prioritaria</span>
+          <h3 class="section-title">Publicidades Generales en Emisión</h3>
+          <div class="section-title-divider"></div>
+          <p class="section-subtitle">
+            Estas publicidades se están reproduciendo activamente en la posición prioritaria #1 de todos los televisores vinculados. Puedes modificar su duración o retirarlas en cualquier momento.
+          </p>
         </div>
 
         <div class="global-ads-grid" id="global-ads-container">
